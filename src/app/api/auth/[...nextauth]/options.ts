@@ -1,7 +1,7 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { kv } from "@vercel/kv";
+import { kv } from "@/lib/kv";
 import { logAudit } from "@/lib/audit";
 import type { User } from "@/types";
 

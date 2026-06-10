@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import { kv } from "@vercel/kv";
+import { kv } from "@/lib/kv";
 import type { SurveySend } from "@/types";
 
 export function generateToken(): string {

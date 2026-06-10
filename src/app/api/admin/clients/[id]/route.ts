@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { kv } from "@vercel/kv";
+import { kv } from "@/lib/kv";
 import { requireRole } from "@/lib/auth-guard";
 import { logAudit } from "@/lib/audit";
 import type { Client } from "@/types";

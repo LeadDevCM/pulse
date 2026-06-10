@@ -1,4 +1,4 @@
-import { kv } from "@vercel/kv";
+import { kv } from "@/lib/kv";
 import type { AuditEntry } from "@/types";
 
 const SIX_YEARS_SECONDS = Math.floor(6 * 365.25 * 24 * 60 * 60);

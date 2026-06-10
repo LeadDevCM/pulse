@@ -11,7 +11,7 @@
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
     "@tabler/icons-react": "^3.44.0",
-    "@vercel/kv": "^3.0.0",
+    "@upstash/redis": "^1.38.0",
     "bcryptjs": "^3.0.3",
     "next": "16.2.9",
     "next-auth": "^4.24.14",
