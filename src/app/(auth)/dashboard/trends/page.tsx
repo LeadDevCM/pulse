@@ -1,17 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { useSession } from "next-auth/react";
 import TrendChart from "@/components/dashboard/TrendChart";
 import ClinicianFilter from "@/components/dashboard/ClinicianFilter";
 import Card from "@/components/ui/Card";
 import Select from "@/components/ui/Select";
 import RoleGate from "@/components/layout/RoleGate";
+import { useViewAs } from "@/lib/view-context";
 
 export default function TrendsPage() {
-  const { data: session } = useSession();
+  const { viewingAs } = useViewAs();
   const [clinicianId, setClinicianId] = useState(
-    session?.user?.role === "clinician" ? session.user.clinicianId || "" : ""
+    viewingAs === "clinician" ? "" : ""
   );
   const [days, setDays] = useState("30");
   const [groupBy, setGroupBy] = useState("day");

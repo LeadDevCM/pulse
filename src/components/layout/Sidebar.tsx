@@ -14,19 +14,22 @@ import {
   IconShieldCheck,
   IconUserCog,
   IconLogout,
+  IconEye,
 } from "@tabler/icons-react";
+import { useViewAs } from "@/lib/view-context";
 import type { Role } from "@/types";
 
 interface SidebarProps {
-  role: Role;
   userName: string;
 }
+
+type ViewableRole = Exclude<Role, "super_admin">;
 
 interface NavItem {
   href: string;
   label: string;
   icon: React.ReactNode;
-  roles: Role[];
+  roles: ViewableRole[];
 }
 
 const navItems: NavItem[] = [
@@ -41,9 +44,19 @@ const navItems: NavItem[] = [
   { href: "/admin/audit", label: "Audit Log", icon: <IconShieldCheck size={20} />, roles: ["owner"] },
 ];
 
-export default function Sidebar({ role, userName }: SidebarProps) {
+const viewLabels: Record<ViewableRole, string> = {
+  owner: "Owner",
+  clinician: "Clinician",
+  office_manager: "Office Manager",
+};
+
+export default function Sidebar({ userName }: SidebarProps) {
   const pathname = usePathname();
-  const filtered = navItems.filter((item) => item.roles.includes(role));
+  const { viewingAs, setViewingAs, isSuperAdmin } = useViewAs();
+
+  const filtered = isSuperAdmin
+    ? navItems
+    : navItems.filter((item) => item.roles.includes(viewingAs));
 
   return (
     <aside className="w-64 bg-white border-r border-border flex flex-col h-full">
@@ -51,6 +64,30 @@ export default function Sidebar({ role, userName }: SidebarProps) {
         <h1 className="text-xl font-bold text-primary">Pulse</h1>
         <p className="text-xs text-text-secondary mt-1">Mending Minds</p>
       </div>
+
+      {isSuperAdmin && (
+        <div className="px-3 pt-3">
+          <div className="flex items-center gap-2 px-3 py-1.5 text-xs text-text-secondary">
+            <IconEye size={14} />
+            <span>Viewing as</span>
+          </div>
+          <div className="flex gap-1 px-2">
+            {(Object.keys(viewLabels) as ViewableRole[]).map((r) => (
+              <button
+                key={r}
+                onClick={() => setViewingAs(r)}
+                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                  viewingAs === r
+                    ? "bg-primary text-white"
+                    : "bg-bg-alt text-text-secondary hover:text-text"
+                }`}
+              >
+                {viewLabels[r]}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
         {filtered.map((item) => {
@@ -74,7 +111,9 @@ export default function Sidebar({ role, userName }: SidebarProps) {
 
       <div className="p-4 border-t border-border">
         <div className="text-sm font-medium text-text truncate">{userName}</div>
-        <div className="text-xs text-text-secondary capitalize mb-3">{role.replace("_", " ")}</div>
+        <div className="text-xs text-text-secondary capitalize mb-3">
+          {isSuperAdmin ? `${viewLabels[viewingAs]} view` : viewingAs.replace("_", " ")}
+        </div>
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
           className="flex items-center gap-2 text-sm text-text-secondary hover:text-error transition-colors"

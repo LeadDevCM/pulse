@@ -3,7 +3,7 @@ export interface User {
   name: string;
   email: string;
   passwordHash: string;
-  role: 'owner' | 'clinician' | 'office_manager';
+  role: 'owner' | 'clinician' | 'office_manager' | 'super_admin';
   clinicianId?: string;
   active: boolean;
   createdAt: string;
@@ -93,7 +93,7 @@ export interface BatchEntry {
   sendId?: string;
 }
 
-export type Role = 'owner' | 'clinician' | 'office_manager';
+export type Role = 'owner' | 'clinician' | 'office_manager' | 'super_admin';
 
 export type AuditAction =
   | 'client_added'

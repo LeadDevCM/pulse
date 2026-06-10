@@ -5,10 +5,12 @@ import StatsOverview from "@/components/dashboard/StatsOverview";
 import ResponseList from "@/components/dashboard/ResponseList";
 import RoleGate from "@/components/layout/RoleGate";
 import Card from "@/components/ui/Card";
+import { useViewAs } from "@/lib/view-context";
 
 export default function DashboardPage() {
   const { data: session } = useSession();
-  const clinicianId = session?.user?.role === "clinician" ? session.user.clinicianId : undefined;
+  const { viewingAs } = useViewAs();
+  const clinicianId = viewingAs === "clinician" ? session?.user?.clinicianId : undefined;
 
   return (
     <div className="space-y-6">

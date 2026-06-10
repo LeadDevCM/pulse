@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useViewAs } from "@/lib/view-context";
 import type { Role } from "@/types";
 
 interface RoleGateProps {
@@ -10,8 +10,14 @@ interface RoleGateProps {
 }
 
 export default function RoleGate({ allowedRoles, children, fallback = null }: RoleGateProps) {
-  const { data: session } = useSession();
-  if (!session?.user?.role || !allowedRoles.includes(session.user.role)) {
+  const { viewingAs, isSuperAdmin } = useViewAs();
+
+  if (isSuperAdmin) {
+    if (allowedRoles.includes(viewingAs)) return <>{children}</>;
+    return <>{fallback}</>;
+  }
+
+  if (!allowedRoles.includes(viewingAs)) {
     return <>{fallback}</>;
   }
   return <>{children}</>;

@@ -14,6 +14,9 @@ export async function requireAuth() {
 export async function requireRole(allowedRoles: Role[]) {
   const { error, session } = await requireAuth();
   if (error) return { error, session: null };
+  if (session!.user.role === "super_admin") {
+    return { error: null, session: session! };
+  }
   if (!allowedRoles.includes(session!.user.role)) {
     return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }), session: null };
   }

@@ -6,12 +6,13 @@ import ResponseList from "@/components/dashboard/ResponseList";
 import ClinicianFilter from "@/components/dashboard/ClinicianFilter";
 import Card from "@/components/ui/Card";
 import RoleGate from "@/components/layout/RoleGate";
+import { useViewAs } from "@/lib/view-context";
 
 export default function ResponsesPage() {
   const { data: session } = useSession();
-  const isOwner = session?.user?.role === "owner";
+  const { viewingAs } = useViewAs();
   const [clinicianId, setClinicianId] = useState(
-    session?.user?.role === "clinician" ? session.user.clinicianId || "" : ""
+    viewingAs === "clinician" ? session?.user?.clinicianId || "" : ""
   );
 
   return (

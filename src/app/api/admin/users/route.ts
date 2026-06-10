@@ -16,6 +16,7 @@ export async function GET() {
     const raw = await kv.get<string>(`user:${id}`);
     if (!raw) continue;
     const user: User = typeof raw === "string" ? JSON.parse(raw) : raw;
+    if (user.role === "super_admin") continue;
     const { passwordHash, ...safe } = user;
     users.push(safe);
   }

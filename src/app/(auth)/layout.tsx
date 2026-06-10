@@ -5,6 +5,7 @@ import { SessionProvider, useSession } from "next-auth/react";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import { ToastProvider } from "@/components/ui/Toast";
+import { ViewProvider } from "@/lib/view-context";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import type { Role } from "@/types";
 
@@ -23,36 +24,32 @@ function AuthLayoutInner({ children }: { children: React.ReactNode }) {
   if (!session) return null;
 
   return (
-    <div className="min-h-screen flex bg-bg-alt">
-      {/* Mobile overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+    <ViewProvider actualRole={session.user.role as Role}>
+      <div className="min-h-screen flex bg-bg-alt">
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
 
-      {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 lg:static lg:z-auto transition-transform lg:translate-x-0 ${
-        sidebarOpen ? "translate-x-0" : "-translate-x-full"
-      }`}>
-        <Sidebar
-          role={session.user.role as Role}
-          userName={session.user.name || "User"}
-        />
-      </div>
+        <div className={`fixed inset-y-0 left-0 z-50 lg:static lg:z-auto transition-transform lg:translate-x-0 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}>
+          <Sidebar userName={session.user.name || "User"} />
+        </div>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col min-h-screen">
-        <Header
-          title="Pulse"
-          onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
-        />
-        <main className="flex-1 p-6">
-          {children}
-        </main>
+        <div className="flex-1 flex flex-col min-h-screen">
+          <Header
+            title="Pulse"
+            onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
+          />
+          <main className="flex-1 p-6">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </ViewProvider>
   );
 }
 
