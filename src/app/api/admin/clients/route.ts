@@ -20,6 +20,7 @@ export async function GET(request: Request) {
     clients.push({
       ...client,
       name: decrypt(client.name),
+      email: client.email ? decrypt(client.email) : undefined,
       phone: decrypt(client.phone),
     });
   }
@@ -39,8 +40,8 @@ export async function POST(request: Request) {
   const { error, session } = await requireRole(["owner", "office_manager"]);
   if (error) return error;
 
-  const { name, phone, clinicianId } = await request.json();
-  if (!name || !phone || !clinicianId) {
+  const { name, phone, email, clinicianId } = await request.json();
+  if (!name || !phone) {
     return NextResponse.json({ error: "missing_fields" }, { status: 400 });
   }
 
@@ -48,8 +49,9 @@ export async function POST(request: Request) {
   const client: Client = {
     id,
     name: encrypt(name),
+    email: email ? encrypt(email) : undefined,
     phone: encrypt(phone),
-    clinicianId,
+    clinicianId: clinicianId || undefined,
     optedInAt: new Date().toISOString(),
     active: true,
   };

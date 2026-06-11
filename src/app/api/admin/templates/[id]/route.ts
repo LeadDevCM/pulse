@@ -28,3 +28,22 @@ export async function PUT(
 
   return NextResponse.json({ success: true, template });
 }
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { error } = await requireRole(["owner"]);
+  if (error) return error;
+
+  const { id } = await params;
+  const raw = await kv.get<string>(`survey:template:${id}`);
+  if (!raw) {
+    return NextResponse.json({ error: "not_found" }, { status: 404 });
+  }
+
+  await kv.del(`survey:template:${id}`);
+  await kv.srem("survey:template:index", id);
+
+  return NextResponse.json({ success: true });
+}

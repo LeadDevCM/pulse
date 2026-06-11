@@ -46,3 +46,35 @@ export async function PUT(
   const { passwordHash, ...safe } = user;
   return NextResponse.json({ success: true, user: safe });
 }
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { error, session } = await requireRole(["owner"]);
+  if (error) return error;
+
+  const { id } = await params;
+  const raw = await kv.get<string>(`user:${id}`);
+  if (!raw) {
+    return NextResponse.json({ error: "not_found" }, { status: 404 });
+  }
+
+  const user: User = typeof raw === "string" ? JSON.parse(raw) : raw;
+  user.active = false;
+  user.updatedAt = new Date().toISOString();
+
+  await kv.set(`user:${id}`, JSON.stringify(user));
+  await kv.srem("user:index", id);
+  await kv.del(`user:email:${user.email}`);
+
+  await logAudit({
+    action: "user_modified",
+    userId: session.user.id,
+    userRole: session.user.role,
+    resourceType: "user",
+    resourceId: id,
+  });
+
+  return NextResponse.json({ success: true });
+}

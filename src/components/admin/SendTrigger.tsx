@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
@@ -9,12 +10,18 @@ import { IconSend } from "@tabler/icons-react";
 
 export default function SendTrigger() {
   const [clientId, setClientId] = useState("");
+  const [clientSearch, setClientSearch] = useState("");
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
   const [clinicianId, setClinicianId] = useState("");
   const [templateId, setTemplateId] = useState("");
   const [clients, setClients] = useState<{ id: string; name: string; clinicianId: string }[]>([]);
   const [templates, setTemplates] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const { addToast } = useToast();
+
+  const filteredClients = clients.filter((c) =>
+    c.name.toLowerCase().includes(clientSearch.toLowerCase())
+  );
 
   useEffect(() => {
     fetch("/api/admin/clients").then((r) => r.json()).then((d) => setClients(d.clients || [])).catch(() => {});
@@ -37,6 +44,7 @@ export default function SendTrigger() {
     if (res.ok) {
       addToast("Survey SMS sent", "success");
       setClientId("");
+      setClientSearch("");
     } else {
       addToast("Failed to send SMS", "error");
     }
@@ -46,15 +54,42 @@ export default function SendTrigger() {
   return (
     <Card>
       <div className="space-y-4">
-        <Select
-          label="Client"
-          value={clientId}
-          onChange={(e) => setClientId(e.target.value)}
-          options={[
-            { value: "", label: "Select client..." },
-            ...clients.map((c) => ({ value: c.id, label: c.name })),
-          ]}
-        />
+        <div className="relative">
+          <Input
+            label="Client"
+            value={clientSearch}
+            onChange={(e) => {
+              setClientSearch(e.target.value);
+              setClientId("");
+              setShowClientDropdown(true);
+            }}
+            onFocus={() => setShowClientDropdown(true)}
+            placeholder="Type to search..."
+          />
+          {showClientDropdown && clientSearch && filteredClients.length > 0 && (
+            <div className="absolute z-10 left-0 right-0 top-full mt-1 bg-bg border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+              {filteredClients.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => {
+                    setClientId(c.id);
+                    setClientSearch(c.name);
+                    setShowClientDropdown(false);
+                  }}
+                  className="w-full text-left px-3 py-2 text-sm text-text hover:bg-bg-alt transition-colors"
+                >
+                  {c.name}
+                </button>
+              ))}
+            </div>
+          )}
+          {showClientDropdown && clientSearch && filteredClients.length === 0 && (
+            <div className="absolute z-10 left-0 right-0 top-full mt-1 bg-bg border border-border rounded-lg shadow-lg px-3 py-2 text-sm text-text-secondary">
+              No clients found
+            </div>
+          )}
+        </div>
         <Select
           label="Survey Template"
           value={templateId}

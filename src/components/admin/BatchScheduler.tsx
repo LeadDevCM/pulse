@@ -22,10 +22,16 @@ export default function BatchScheduler() {
   const [entries, setEntries] = useState<BatchEntryDraft[]>([]);
   const [clients, setClients] = useState<{ id: string; name: string; clinicianId: string }[]>([]);
   const [selectedClient, setSelectedClient] = useState("");
+  const [clientSearch, setClientSearch] = useState("");
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
   const [appointmentTime, setAppointmentTime] = useState("");
   const [delay, setDelay] = useState("30");
   const [loading, setLoading] = useState(false);
   const { addToast } = useToast();
+
+  const filteredClients = clients.filter((c) =>
+    c.name.toLowerCase().includes(clientSearch.toLowerCase())
+  );
 
   useEffect(() => {
     fetch("/api/admin/clients").then((r) => r.json()).then((d) => setClients(d.clients || [])).catch(() => {});
@@ -42,6 +48,7 @@ export default function BatchScheduler() {
       sendAfterMinutes: Number(delay),
     }]);
     setSelectedClient("");
+    setClientSearch("");
     setAppointmentTime("");
   };
 
@@ -80,12 +87,42 @@ export default function BatchScheduler() {
         <div className="space-y-4">
           <Input label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <Select
-              label="Client"
-              value={selectedClient}
-              onChange={(e) => setSelectedClient(e.target.value)}
-              options={[{ value: "", label: "Select..." }, ...clients.map((c) => ({ value: c.id, label: c.name }))]}
-            />
+            <div className="relative">
+              <Input
+                label="Client"
+                value={clientSearch}
+                onChange={(e) => {
+                  setClientSearch(e.target.value);
+                  setSelectedClient("");
+                  setShowClientDropdown(true);
+                }}
+                onFocus={() => setShowClientDropdown(true)}
+                placeholder="Type to search..."
+              />
+              {showClientDropdown && clientSearch && filteredClients.length > 0 && (
+                <div className="absolute z-10 left-0 right-0 top-full mt-1 bg-bg border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  {filteredClients.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedClient(c.id);
+                        setClientSearch(c.name);
+                        setShowClientDropdown(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm text-text hover:bg-bg-alt transition-colors"
+                    >
+                      {c.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {showClientDropdown && clientSearch && filteredClients.length === 0 && (
+                <div className="absolute z-10 left-0 right-0 top-full mt-1 bg-bg border border-border rounded-lg shadow-lg px-3 py-2 text-sm text-text-secondary">
+                  No clients found
+                </div>
+              )}
+            </div>
             <Input label="Appt Time" type="time" value={appointmentTime} onChange={(e) => setAppointmentTime(e.target.value)} />
             <Input label="Delay (min)" type="number" value={delay} onChange={(e) => setDelay(e.target.value)} />
           </div>

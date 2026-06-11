@@ -19,8 +19,9 @@ export interface Clinician {
 export interface Client {
   id: string;
   name: string;       // ENCRYPTED in storage
+  email?: string;     // ENCRYPTED in storage
   phone: string;      // ENCRYPTED in storage (E.164 before encryption)
-  clinicianId: string;
+  clinicianId?: string;
   optedInAt: string;
   active: boolean;
 }
@@ -108,7 +109,8 @@ export type AuditAction =
   | 'login_success'
   | 'login_failed'
   | 'user_created'
-  | 'user_modified';
+  | 'user_modified'
+  | 'clients_imported';
 
 export interface AuditEntry {
   id: string;

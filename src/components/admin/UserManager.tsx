@@ -8,7 +8,7 @@ import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import Badge from "@/components/ui/Badge";
 import { useToast } from "@/components/ui/Toast";
-import { IconPlus } from "@tabler/icons-react";
+import { IconPlus, IconTrash } from "@tabler/icons-react";
 
 interface UserItem {
   id: string;
@@ -27,6 +27,7 @@ export default function UserManager() {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("clinician");
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const { addToast } = useToast();
 
   const loadUsers = () => {
@@ -59,6 +60,24 @@ export default function UserManager() {
     setSaving(false);
   };
 
+  const deleteUser = async (id: string) => {
+    if (!confirm("Deactivate this user? They will no longer be able to log in.")) return;
+    setDeleting(id);
+    try {
+      const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        addToast("User deactivated", "success");
+        loadUsers();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        addToast(data.error || "Failed to deactivate user", "error");
+      }
+    } catch {
+      addToast("Network error", "error");
+    }
+    setDeleting(null);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -71,7 +90,7 @@ export default function UserManager() {
       {loading ? (
         <div className="text-center py-8 text-text-secondary">Loading...</div>
       ) : (
-        <Table headers={["Name", "Email", "Role", "Status"]}>
+        <Table headers={["Name", "Email", "Role", "Status", ""]}>
           {users.map((u) => (
             <tr key={u.id} className="hover:bg-bg-alt">
               <td className="px-4 py-3 text-sm font-medium text-text">{u.name}</td>
@@ -79,6 +98,15 @@ export default function UserManager() {
               <td className="px-4 py-3"><Badge>{u.role.replace("_", " ")}</Badge></td>
               <td className="px-4 py-3">
                 <Badge variant={u.active ? "success" : "error"}>{u.active ? "Active" : "Inactive"}</Badge>
+              </td>
+              <td className="px-4 py-3 text-right">
+                <button
+                  onClick={() => deleteUser(u.id)}
+                  disabled={deleting === u.id}
+                  className="p-1 text-text-secondary hover:text-error transition-colors disabled:opacity-50"
+                >
+                  <IconTrash size={18} />
+                </button>
               </td>
             </tr>
           ))}

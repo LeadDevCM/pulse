@@ -1,15 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import TemplateEditorModal from "@/components/admin/TemplateEditorModal";
+import { IconPencil, IconPlus, IconTrash } from "@tabler/icons-react";
+import { useToast } from "@/components/ui/Toast";
 import type { SurveyTemplate } from "@/types";
 
 export default function SurveysPage() {
   const [templates, setTemplates] = useState<SurveyTemplate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingTemplate, setEditingTemplate] = useState<SurveyTemplate | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const { addToast } = useToast();
 
-  useEffect(() => {
+  const loadTemplates = useCallback(() => {
+    setLoading(true);
     fetch("/api/admin/templates")
       .then((r) => r.json())
       .then((data) => {
@@ -19,13 +28,40 @@ export default function SurveysPage() {
       .catch(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    loadTemplates();
+  }, [loadTemplates]);
+
+  const deleteTemplate = async (id: string) => {
+    if (!confirm("Delete this survey template? This cannot be undone.")) return;
+    setDeleting(id);
+    try {
+      const res = await fetch(`/api/admin/templates/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        addToast("Template deleted", "success");
+        loadTemplates();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        addToast(data.error || "Failed to delete template", "error");
+      }
+    } catch {
+      addToast("Network error", "error");
+    }
+    setDeleting(null);
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-text">Survey Templates</h2>
-        <p className="text-text-secondary mt-1">
-          Manage survey question templates
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold text-text">Survey Templates</h2>
+          <p className="text-text-secondary mt-1">
+            Manage survey question templates
+          </p>
+        </div>
+        <Button onClick={() => setShowCreate(true)} size="sm">
+          <IconPlus size={16} className="mr-1" /> New Template
+        </Button>
       </div>
 
       {loading ? (
@@ -46,9 +82,27 @@ export default function SurveysPage() {
                   {t.questions.length} questions
                 </p>
               </div>
-              <Badge variant={t.active ? "success" : "default"}>
-                {t.active ? "Active" : "Inactive"}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setEditingTemplate(t)}
+                >
+                  <IconPencil size={16} className="mr-1" /> Edit
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => deleteTemplate(t.id)}
+                  disabled={deleting === t.id}
+                  className="text-error hover:text-error"
+                >
+                  <IconTrash size={16} className="mr-1" /> Delete
+                </Button>
+                <Badge variant={t.active ? "success" : "default"}>
+                  {t.active ? "Active" : "Inactive"}
+                </Badge>
+              </div>
             </div>
             <div className="space-y-3">
               {t.questions
@@ -74,6 +128,23 @@ export default function SurveysPage() {
             </div>
           </Card>
         ))
+      )}
+
+      {editingTemplate && (
+        <TemplateEditorModal
+          open={true}
+          onClose={() => setEditingTemplate(null)}
+          template={editingTemplate}
+          onSaved={loadTemplates}
+        />
+      )}
+
+      {showCreate && (
+        <TemplateEditorModal
+          open={true}
+          onClose={() => setShowCreate(false)}
+          onSaved={loadTemplates}
+        />
       )}
     </div>
   );

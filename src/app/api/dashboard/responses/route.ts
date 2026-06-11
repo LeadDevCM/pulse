@@ -25,8 +25,8 @@ export async function GET(request: Request) {
     const end = endDate ? new Date(endDate).getTime() : Date.now();
     tokens = await kv.zrange<string[]>(
       `response:by-clinician:${clinicianId}`,
-      start,
       end,
+      start,
       { byScore: true, offset, count: limit, rev: true }
     );
   } else {
