@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "postinstall": "cp -r node_modules/postcss/ node_modules/next/node_modules/postcss/"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
@@ -22,6 +23,11 @@
     "uuid": "^14.0.0",
     "ws": "^8.21.0"
   },
+  "overrides": {
+    "next-auth": {
+      "uuid": "$uuid"
+    }
+  },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",
@@ -31,6 +37,7 @@
     "@types/uuid": "^10.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "postcss": "^8.5.15",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
