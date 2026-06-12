@@ -8,7 +8,7 @@ import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import Badge from "@/components/ui/Badge";
 import { useToast } from "@/components/ui/Toast";
-import { IconPlus, IconTrash } from "@tabler/icons-react";
+import { IconPlus, IconTrash, IconPencil } from "@tabler/icons-react";
 
 interface UserItem {
   id: string;
@@ -28,6 +28,11 @@ export default function UserManager() {
   const [role, setRole] = useState("clinician");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [editUser, setEditUser] = useState<UserItem | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editRole, setEditRole] = useState("");
+  const [editActive, setEditActive] = useState(true);
+  const [editPassword, setEditPassword] = useState("");
   const { addToast } = useToast();
 
   const loadUsers = () => {
@@ -78,6 +83,48 @@ export default function UserManager() {
     setDeleting(null);
   };
 
+  const openEdit = (u: UserItem) => {
+    setEditUser(u);
+    setEditName(u.name);
+    setEditRole(u.role);
+    setEditActive(u.active);
+    setEditPassword("");
+  };
+
+  const saveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editUser) return;
+    if (editPassword && editPassword.length < 12) {
+      addToast("Password must be at least 12 characters", "error");
+      return;
+    }
+    setSaving(true);
+    const body: Record<string, unknown> = {
+      name: editName,
+      role: editRole,
+      active: editActive,
+    };
+    if (editPassword) body.password = editPassword;
+    try {
+      const res = await fetch(`/api/admin/users/${editUser.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        addToast("User updated", "success");
+        setEditUser(null);
+        loadUsers();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        addToast(data.error || "Failed to update user", "error");
+      }
+    } catch {
+      addToast("Network error", "error");
+    }
+    setSaving(false);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -99,7 +146,13 @@ export default function UserManager() {
               <td className="px-4 py-3">
                 <Badge variant={u.active ? "success" : "error"}>{u.active ? "Active" : "Inactive"}</Badge>
               </td>
-              <td className="px-4 py-3 text-right">
+              <td className="px-4 py-3 text-right space-x-1">
+                <button
+                  onClick={() => openEdit(u)}
+                  className="p-1 text-text-secondary hover:text-primary transition-colors"
+                >
+                  <IconPencil size={18} />
+                </button>
                 <button
                   onClick={() => deleteUser(u.id)}
                   disabled={deleting === u.id}
@@ -129,6 +182,67 @@ export default function UserManager() {
             ]}
           />
           <Button type="submit" loading={saving} className="w-full">Create User</Button>
+        </form>
+      </Modal>
+
+      <Modal open={!!editUser} onClose={() => setEditUser(null)} title="Edit User">
+        <form onSubmit={saveEdit} className="space-y-4">
+          <Input
+            label="Name"
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            required
+          />
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-text">Email</label>
+            <p className="px-3 py-2 rounded-lg border border-border bg-bg-alt text-text-secondary text-sm">
+              {editUser?.email}
+            </p>
+          </div>
+          <Select
+            label="Role"
+            value={editRole}
+            onChange={(e) => setEditRole(e.target.value)}
+            options={[
+              { value: "owner", label: "Owner" },
+              { value: "clinician", label: "Clinician" },
+              { value: "office_manager", label: "Office Manager" },
+            ]}
+          />
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={editActive}
+              onClick={() => setEditActive(!editActive)}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${editActive ? "bg-primary" : "bg-border"}`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${editActive ? "translate-x-5" : "translate-x-0"}`}
+              />
+            </button>
+            <span className="text-sm text-text">{editActive ? "Active" : "Inactive"}</span>
+          </div>
+          <div className="border-t border-border pt-4">
+            <Input
+              label="Reset Password"
+              type="password"
+              value={editPassword}
+              onChange={(e) => setEditPassword(e.target.value)}
+              placeholder="Leave blank to keep current password"
+            />
+            {editPassword && editPassword.length < 12 && (
+              <p className="text-xs text-error mt-1">Must be at least 12 characters</p>
+            )}
+          </div>
+          <div className="flex gap-2 pt-2">
+            <Button type="button" variant="ghost" onClick={() => setEditUser(null)} className="flex-1">
+              Cancel
+            </Button>
+            <Button type="submit" loading={saving} className="flex-1">
+              Save Changes
+            </Button>
+          </div>
         </form>
       </Modal>
     </div>
