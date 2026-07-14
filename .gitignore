@@ -47,3 +47,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .env*.local
+node_modules/
+.idea/
+.env
+.env.*
+!.env.sample
