@@ -5,7 +5,7 @@ import { decrypt } from "@/lib/encryption";
 import { logAudit } from "@/lib/audit";
 
 export async function GET(request: Request) {
-  const { error, session } = await requireRole(["owner", "clinician"]);
+  const { error, session } = await requireRole(["partner", "clinician"]);
   if (error) return error;
 
   const url = new URL(request.url);

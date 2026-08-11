@@ -14,7 +14,7 @@ interface ImportRow {
 }
 
 export async function POST(request: Request) {
-  const { error, session } = await requireRole(["owner", "office_manager"]);
+  const { error, session } = await requireRole(["partner", "office_manager"]);
   if (error) return error;
 
   const { clients } = (await request.json()) as { clients: ImportRow[] };

@@ -7,7 +7,7 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error } = await requireRole(["owner"]);
+  const { error } = await requireRole(["partner"]);
   if (error) return error;
 
   const { id } = await params;

@@ -4,7 +4,7 @@ import { requireRole } from "@/lib/auth-guard";
 import type { SurveyTemplate } from "@/types";
 
 export async function GET() {
-  const { error } = await requireRole(["owner"]);
+  const { error } = await requireRole(["partner"]);
   if (error) return error;
 
   const ids = await kv.smembers("survey:template:index");
@@ -21,7 +21,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const { error } = await requireRole(["owner"]);
+  const { error } = await requireRole(["partner"]);
   if (error) return error;
 
   const { name, questions } = await request.json();

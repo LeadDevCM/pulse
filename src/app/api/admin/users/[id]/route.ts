@@ -9,7 +9,7 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error, session } = await requireRole(["owner"]);
+  const { error, session } = await requireRole(["partner"]);
   if (error) return error;
 
   const { id } = await params;
@@ -51,7 +51,7 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error, session } = await requireRole(["owner"]);
+  const { error, session } = await requireRole(["partner"]);
   if (error) return error;
 
   const { id } = await params;

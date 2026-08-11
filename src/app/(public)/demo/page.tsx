@@ -404,8 +404,8 @@ export default function DemoPage() {
                       lineHeight: "1.5",
                     }}
                   >
-                    Mending Minds values your feedback. Please take a moment to
-                    share your experience:{" "}
+                    We value your feedback. Please take a moment to share your
+                    experience:{" "}
                     <button
                       onClick={handleLinkTap}
                       style={{
@@ -420,7 +420,7 @@ export default function DemoPage() {
                         wordBreak: "break-all",
                       }}
                     >
-                      https://pulse.mendingminds.app/s/d7f3...
+                      pls.mn/s/d7f3
                     </button>
                   </div>
                   <p

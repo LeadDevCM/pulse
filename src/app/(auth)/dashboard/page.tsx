@@ -21,11 +21,11 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      <RoleGate allowedRoles={["owner", "office_manager"]}>
+      <RoleGate allowedRoles={["partner", "office_manager"]}>
         <StatsOverview />
       </RoleGate>
 
-      <RoleGate allowedRoles={["owner", "clinician"]}>
+      <RoleGate allowedRoles={["partner", "clinician", "office_manager"]}>
         <Card>
           <h3 className="text-lg font-semibold text-text mb-4">Recent Responses</h3>
           <ResponseList clinicianId={clinicianId} />

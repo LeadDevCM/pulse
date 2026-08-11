@@ -8,7 +8,7 @@ import { logAudit } from "@/lib/audit";
 import type { Client, SurveySend } from "@/types";
 
 export async function POST(request: Request) {
-  const { error, session } = await requireRole(["owner", "office_manager"]);
+  const { error, session } = await requireRole(["partner", "office_manager"]);
   if (error) return error;
 
   const { clientId, clinicianId, templateId } = await request.json();

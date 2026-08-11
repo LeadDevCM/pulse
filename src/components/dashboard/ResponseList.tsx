@@ -9,10 +9,12 @@ import { IconChevronRight } from "@tabler/icons-react";
 import type { SurveyQuestion } from "@/types";
 
 interface ResponseItem {
-  token: string;
+  token?: string;
+  id?: string;
   clinicianId: string;
   templateId: string;
   submittedAt: string;
+  clientName?: string | null;
   answers: { questionId: string; value: string | number }[];
 }
 
@@ -110,14 +112,20 @@ export default function ResponseList({ clinicianId }: ResponseListProps) {
     return <div className="text-center py-8 text-text-secondary">No responses found.</div>;
   }
 
+  const showClientColumn = responses.some((r) => "clientName" in r);
+
+  const headers = showClientColumn
+    ? ["Date", "Client", "Clinician", "Answers", "Avg Rating", ""]
+    : ["Date", "Clinician", "Answers", "Avg Rating", ""];
+
   return (
     <div className="space-y-4">
-      <Table headers={["Date", "Clinician", "Answers", "Avg Rating", ""]}>
-        {responses.map((r) => {
+      <Table headers={headers}>
+        {responses.map((r, i) => {
           const avg = getAvgRating(r);
           return (
             <tr
-              key={r.token}
+              key={r.token || r.id || String(i)}
               onClick={() => setSelected(r)}
               className="hover:bg-bg-alt cursor-pointer"
             >
@@ -130,6 +138,11 @@ export default function ResponseList({ clinicianId }: ResponseListProps) {
                   minute: "2-digit",
                 })}
               </td>
+              {showClientColumn && (
+                <td className="px-4 py-3 text-sm text-text">
+                  {r.clientName || <span className="text-text-secondary italic">Anonymous</span>}
+                </td>
+              )}
               <td className="px-4 py-3 text-sm text-text-secondary">
                 {clinicians[r.clinicianId] || "—"}
               </td>
@@ -179,7 +192,12 @@ export default function ResponseList({ clinicianId }: ResponseListProps) {
                   minute: "2-digit",
                 })}
               </span>
-              <Badge>{clinicians[selected.clinicianId] || "Unknown"}</Badge>
+              <div className="flex items-center gap-2">
+                {selected.clientName && (
+                  <Badge variant="default">{selected.clientName}</Badge>
+                )}
+                <Badge>{clinicians[selected.clinicianId] || "Unknown"}</Badge>
+              </div>
             </div>
 
             <div className="divide-y divide-border">

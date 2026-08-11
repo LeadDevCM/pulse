@@ -24,7 +24,7 @@ export default function TrendsPage() {
       </div>
 
       <div className="flex flex-wrap gap-4 items-end">
-        <RoleGate allowedRoles={["owner"]}>
+        <RoleGate allowedRoles={["partner"]}>
           <div className="w-48">
             <ClinicianFilter value={clinicianId} onChange={setClinicianId} />
           </div>

@@ -4,7 +4,7 @@ import { requireRole } from "@/lib/auth-guard";
 import type { Clinician } from "@/types";
 
 export async function GET() {
-  const { error } = await requireRole(["owner", "office_manager"]);
+  const { error } = await requireRole(["partner", "office_manager"]);
   if (error) return error;
 
   const ids = await kv.smembers("clinician:index");
@@ -21,7 +21,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const { error } = await requireRole(["owner"]);
+  const { error } = await requireRole(["partner"]);
   if (error) return error;
 
   const { name } = await request.json();

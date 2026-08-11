@@ -4,7 +4,7 @@ import { requireRole } from "@/lib/auth-guard";
 import { logAudit } from "@/lib/audit";
 
 export async function POST() {
-  const { error, session } = await requireRole(["owner"]);
+  const { error, session } = await requireRole(["partner"]);
   if (error) return error;
 
   const purgeDays = Number(process.env.AUTO_PURGE_DAYS || 90);

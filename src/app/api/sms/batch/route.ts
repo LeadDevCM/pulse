@@ -5,7 +5,7 @@ import { logAudit } from "@/lib/audit";
 import type { ScheduledBatch, BatchEntry } from "@/types";
 
 export async function POST(request: Request) {
-  const { error, session } = await requireRole(["owner", "office_manager"]);
+  const { error, session } = await requireRole(["partner", "office_manager"]);
   if (error) return error;
 
   const { date, entries } = await request.json();

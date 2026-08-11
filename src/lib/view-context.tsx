@@ -12,7 +12,7 @@ interface ViewContextType {
 }
 
 const ViewContext = createContext<ViewContextType>({
-  viewingAs: "owner",
+  viewingAs: "partner",
   setViewingAs: () => {},
   isSuperAdmin: false,
 });
@@ -30,7 +30,7 @@ export function ViewProvider({
 }) {
   const isSuperAdmin = actualRole === "super_admin";
   const [viewingAs, setViewingAs] = useState<ViewableRole>(
-    isSuperAdmin ? "owner" : (actualRole as ViewableRole)
+    isSuperAdmin ? "partner" : (actualRole as ViewableRole)
   );
 
   return (

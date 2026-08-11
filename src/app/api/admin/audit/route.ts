@@ -3,7 +3,7 @@ import { requireRole } from "@/lib/auth-guard";
 import { getAuditLogs } from "@/lib/audit";
 
 export async function GET(request: Request) {
-  const { error } = await requireRole(["owner"]);
+  const { error } = await requireRole(["partner"]);
   if (error) return error;
 
   const url = new URL(request.url);

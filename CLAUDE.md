@@ -42,6 +42,6 @@ src/
 - No PHI in URLs, cookies, or browser storage
 
 ## Roles
-- **owner**: Full access (Kendra Jones, Chelsee Jackson)
-- **clinician**: Own responses and trends only
-- **office_manager**: Client roster, send/schedule surveys, aggregate stats (no individual responses)
+- **partner**: Full access (Kendra Jones, Chelsee Jackson)
+- **clinician**: Own responses and trends only (anonymous — no client names)
+- **office_manager**: Client roster, send/schedule surveys, aggregate stats, individual responses with client names

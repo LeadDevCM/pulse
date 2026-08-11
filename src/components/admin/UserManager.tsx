@@ -176,7 +176,7 @@ export default function UserManager() {
             value={role}
             onChange={(e) => setRole(e.target.value)}
             options={[
-              { value: "owner", label: "Owner" },
+              { value: "partner", label: "Partner" },
               { value: "clinician", label: "Clinician" },
               { value: "office_manager", label: "Office Manager" },
             ]}
@@ -204,7 +204,7 @@ export default function UserManager() {
             value={editRole}
             onChange={(e) => setEditRole(e.target.value)}
             options={[
-              { value: "owner", label: "Owner" },
+              { value: "partner", label: "Partner" },
               { value: "clinician", label: "Clinician" },
               { value: "office_manager", label: "Office Manager" },
             ]}

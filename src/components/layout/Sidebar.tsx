@@ -34,20 +34,20 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { href: "/dashboard", label: "Overview", icon: <IconLayoutDashboard size={20} />, roles: ["owner", "clinician", "office_manager"] },
-  { href: "/dashboard/responses", label: "Responses", icon: <IconMessageCircle size={20} />, roles: ["owner", "clinician"] },
-  { href: "/dashboard/trends", label: "Trends", icon: <IconTrendingUp size={20} />, roles: ["owner", "clinician"] },
-  { href: "/dashboard/compare", label: "Compare", icon: <IconChartBar size={20} />, roles: ["owner"] },
-  { href: "/admin/clients", label: "Clients", icon: <IconUsers size={20} />, roles: ["owner", "office_manager"] },
-  { href: "/admin/schedule", label: "Schedule", icon: <IconCalendarEvent size={20} />, roles: ["owner", "office_manager"] },
-  { href: "/admin/send", label: "Send Survey", icon: <IconSend size={20} />, roles: ["owner", "office_manager"] },
-  { href: "/admin/surveys", label: "Templates", icon: <IconFileText size={20} />, roles: ["owner"] },
-  { href: "/admin/users", label: "Users", icon: <IconUserCog size={20} />, roles: ["owner"] },
-  { href: "/admin/audit", label: "Audit Log", icon: <IconShieldCheck size={20} />, roles: ["owner"] },
+  { href: "/dashboard", label: "Overview", icon: <IconLayoutDashboard size={20} />, roles: ["partner", "clinician", "office_manager"] },
+  { href: "/dashboard/responses", label: "Responses", icon: <IconMessageCircle size={20} />, roles: ["partner", "clinician", "office_manager"] },
+  { href: "/dashboard/trends", label: "Trends", icon: <IconTrendingUp size={20} />, roles: ["partner", "clinician"] },
+  { href: "/dashboard/compare", label: "Compare", icon: <IconChartBar size={20} />, roles: ["partner"] },
+  { href: "/admin/clients", label: "Clients", icon: <IconUsers size={20} />, roles: ["partner", "office_manager"] },
+  { href: "/admin/schedule", label: "Schedule", icon: <IconCalendarEvent size={20} />, roles: ["partner", "office_manager"] },
+  { href: "/admin/send", label: "Send Survey", icon: <IconSend size={20} />, roles: ["partner", "office_manager"] },
+  { href: "/admin/surveys", label: "Templates", icon: <IconFileText size={20} />, roles: ["partner"] },
+  { href: "/admin/users", label: "Users", icon: <IconUserCog size={20} />, roles: ["partner"] },
+  { href: "/admin/audit", label: "Audit Log", icon: <IconShieldCheck size={20} />, roles: ["partner"] },
 ];
 
 const viewLabels: Record<ViewableRole, string> = {
-  owner: "Owner",
+  partner: "Partner",
   clinician: "Clinician",
   office_manager: "Office Manager",
 };

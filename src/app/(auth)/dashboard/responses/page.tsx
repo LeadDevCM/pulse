@@ -24,11 +24,13 @@ export default function ResponsesPage() {
         </p>
       </div>
 
-      <div className="bg-primary-light border border-primary/20 rounded-lg px-4 py-3 text-sm text-primary">
-        Responses are anonymous — no personally identifiable information is displayed.
-      </div>
+      <RoleGate allowedRoles={["clinician"]}>
+        <div className="bg-primary-light border border-primary/20 rounded-lg px-4 py-3 text-sm text-primary">
+          Responses are anonymous — no personally identifiable information is displayed.
+        </div>
+      </RoleGate>
 
-      <RoleGate allowedRoles={["owner"]}>
+      <RoleGate allowedRoles={["partner", "office_manager"]}>
         <div className="max-w-xs">
           <ClinicianFilter value={clinicianId} onChange={setClinicianId} />
         </div>

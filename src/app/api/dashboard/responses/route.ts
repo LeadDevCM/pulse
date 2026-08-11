@@ -4,8 +4,23 @@ import { requireRole } from "@/lib/auth-guard";
 import { decrypt } from "@/lib/encryption";
 import { logAudit } from "@/lib/audit";
 
+async function resolveClientName(token: string): Promise<string | undefined> {
+  try {
+    const sendRaw = await kv.get<string>(`send:token:${token}`);
+    if (!sendRaw) return undefined;
+    const send = typeof sendRaw === "string" ? JSON.parse(sendRaw) : sendRaw;
+    if (!send.clientId) return undefined;
+    const clientRaw = await kv.get<string>(`client:${send.clientId}`);
+    if (!clientRaw) return undefined;
+    const client = typeof clientRaw === "string" ? JSON.parse(clientRaw) : clientRaw;
+    return decrypt(client.name);
+  } catch {
+    return undefined;
+  }
+}
+
 export async function GET(request: Request) {
-  const { error, session } = await requireRole(["owner", "clinician"]);
+  const { error, session } = await requireRole(["partner", "clinician", "office_manager"]);
   if (error) return error;
 
   const url = new URL(request.url);
@@ -30,7 +45,6 @@ export async function GET(request: Request) {
       { byScore: true, offset, count: limit, rev: true }
     );
   } else {
-    // Owner with no filter -- get recent by date
     const today = new Date();
     for (let i = 0; i < 30 && tokens.length < limit; i++) {
       const d = new Date(today);
@@ -56,13 +70,41 @@ export async function GET(request: Request) {
     })
   );
 
+  const filtered = responses.filter(Boolean);
+  const role = session.user.role;
+  const userClinicianId = session.user.clinicianId;
+
+  const sanitized = await Promise.all(
+    filtered.map(async (r: Record<string, unknown>, i: number) => {
+      if (role === "clinician") {
+        return {
+          id: `resp-${i}`,
+          clinicianId: r.clinicianId,
+          templateId: r.templateId,
+          answers: r.answers,
+          submittedAt: r.submittedAt,
+        };
+      }
+
+      const clientName = await resolveClientName(r.token as string);
+
+      if (role === "partner") {
+        const isOwn = userClinicianId && r.clinicianId === userClinicianId;
+        return { ...r, clientName: isOwn ? null : (clientName ?? null) };
+      }
+
+      // office_manager and super_admin see all client names
+      return { ...r, clientName: clientName ?? null };
+    })
+  );
+
   await logAudit({
     action: "response_viewed",
     userId: session.user.id,
     userRole: session.user.role,
     resourceType: "response",
-    metadata: { count: String(responses.filter(Boolean).length), clinicianId: clinicianId || "all" },
+    metadata: { count: String(filtered.length), clinicianId: clinicianId || "all" },
   });
 
-  return NextResponse.json({ responses: responses.filter(Boolean), page, limit });
+  return NextResponse.json({ responses: sanitized, page, limit });
 }

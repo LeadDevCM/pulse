@@ -6,7 +6,7 @@ import { logAudit } from "@/lib/audit";
 import type { User } from "@/types";
 
 export async function GET() {
-  const { error } = await requireRole(["owner"]);
+  const { error } = await requireRole(["partner"]);
   if (error) return error;
 
   const ids = await kv.smembers("user:index");
@@ -25,7 +25,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const { error, session } = await requireRole(["owner"]);
+  const { error, session } = await requireRole(["partner"]);
   if (error) return error;
 
   const { name, email, password, role, clinicianId } = await request.json();
