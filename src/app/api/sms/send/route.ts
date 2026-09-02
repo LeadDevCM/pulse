@@ -85,9 +85,10 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ success: true, sendId: send.id, token });
-  } catch (err) {
+  } catch (err: unknown) {
     send.status = "failed";
     await kv.set(`send:${send.id}`, JSON.stringify(send));
-    return NextResponse.json({ error: "sms_failed" }, { status: 500 });
+    const detail = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: "sms_failed", detail }, { status: 500 });
   }
 }

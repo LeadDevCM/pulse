@@ -65,9 +65,10 @@ export default function SendTrigger() {
         rate_limited: "This client was already sent a survey in the last 24 hours",
         client_not_found: "Client not found",
         missing_fields: "Missing required fields",
-        sms_failed: "SMS delivery failed — check Telnyx configuration",
       };
-      const msg = messages[data.error] || "Failed to send SMS";
+      const msg = data.error === "sms_failed"
+        ? `SMS failed: ${data.detail || "unknown error"}`
+        : (messages[data.error] || "Failed to send SMS");
       setSendResult({ type: "error", message: msg });
       addToast(msg, "error");
     }
