@@ -10,16 +10,20 @@ export async function GET(request: Request) {
   if (error) return error;
 
   const clientIds = await kv.smembers("client:index");
-  const clients: Client[] = [];
+  const clients = [];
 
   for (const id of clientIds) {
     const raw = await kv.get<string>(`client:${id}`);
     if (!raw) continue;
     const client: Client = typeof raw === "string" ? JSON.parse(raw) : raw;
     if (!client.active) continue;
+    const firstName = decrypt(client.firstName);
+    const lastName = decrypt(client.lastName);
     clients.push({
       ...client,
-      name: decrypt(client.name),
+      firstName,
+      lastName,
+      name: `${firstName} ${lastName}`.trim(),
       email: client.email ? decrypt(client.email) : undefined,
       phone: decrypt(client.phone),
     });
@@ -40,15 +44,16 @@ export async function POST(request: Request) {
   const { error, session } = await requireRole(["partner", "office_manager"]);
   if (error) return error;
 
-  const { name, phone, email, clinicianId } = await request.json();
-  if (!name || !phone) {
+  const { firstName, lastName, phone, email, clinicianId } = await request.json();
+  if (!firstName || !lastName || !phone) {
     return NextResponse.json({ error: "missing_fields" }, { status: 400 });
   }
 
   const id = crypto.randomUUID();
   const client: Client = {
     id,
-    name: encrypt(name),
+    firstName: encrypt(firstName),
+    lastName: encrypt(lastName),
     email: email ? encrypt(email) : undefined,
     phone: encrypt(phone),
     clinicianId: clinicianId || undefined,

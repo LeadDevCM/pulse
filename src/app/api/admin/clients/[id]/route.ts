@@ -22,8 +22,11 @@ export async function PUT(
   const client: Client = typeof raw === "string" ? JSON.parse(raw) : raw;
   const updates = await request.json();
 
-  if (updates.name !== undefined) {
-    client.name = encrypt(updates.name);
+  if (updates.firstName !== undefined) {
+    client.firstName = encrypt(updates.firstName);
+  }
+  if (updates.lastName !== undefined) {
+    client.lastName = encrypt(updates.lastName);
   }
   if (updates.email !== undefined) {
     client.email = updates.email === "" ? undefined : encrypt(updates.email);
@@ -49,11 +52,16 @@ export async function PUT(
     resourceId: id,
   });
 
+  const firstName = decrypt(client.firstName);
+  const lastName = decrypt(client.lastName);
+
   return NextResponse.json({
     success: true,
     client: {
       ...client,
-      name: decrypt(client.name),
+      firstName,
+      lastName,
+      name: `${firstName} ${lastName}`.trim(),
       email: client.email ? decrypt(client.email) : undefined,
       phone: decrypt(client.phone),
     },

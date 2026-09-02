@@ -13,7 +13,9 @@ async function resolveClientName(token: string): Promise<string | undefined> {
     const clientRaw = await kv.get<string>(`client:${send.clientId}`);
     if (!clientRaw) return undefined;
     const client = typeof clientRaw === "string" ? JSON.parse(clientRaw) : clientRaw;
-    return decrypt(client.name);
+    const firstName = decrypt(client.firstName);
+    const lastName = decrypt(client.lastName);
+    return `${firstName} ${lastName}`.trim();
   } catch {
     return undefined;
   }

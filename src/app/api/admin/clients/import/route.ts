@@ -7,7 +7,8 @@ import { logAudit } from "@/lib/audit";
 import type { Client } from "@/types";
 
 interface ImportRow {
-  name: string;
+  firstName: string;
+  lastName: string;
   email?: string;
   phone: string;
   clinicianId?: string;
@@ -27,23 +28,24 @@ export async function POST(request: Request) {
   const errors: string[] = [];
 
   for (const row of clients) {
-    if (!row.name || !row.phone) {
+    if (!row.firstName || !row.lastName || !row.phone) {
       skipped++;
-      errors.push(`Skipped: missing name or phone for "${row.name || "unknown"}"`);
+      errors.push(`Skipped: missing name or phone for "${row.firstName || ""} ${row.lastName || ""}".trim() || "unknown"`);
       continue;
     }
 
     const phone = normalizePhone(row.phone);
     if (!phone) {
       skipped++;
-      errors.push(`Skipped: invalid phone "${row.phone}" for "${row.name}"`);
+      errors.push(`Skipped: invalid phone "${row.phone}" for "${row.firstName} ${row.lastName}"`);
       continue;
     }
 
     const id = crypto.randomUUID();
     const client: Client = {
       id,
-      name: encrypt(row.name),
+      firstName: encrypt(row.firstName),
+      lastName: encrypt(row.lastName),
       email: row.email ? encrypt(row.email) : undefined,
       phone: encrypt(phone),
       clinicianId: row.clinicianId || undefined,

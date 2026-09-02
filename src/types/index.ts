@@ -18,7 +18,8 @@ export interface Clinician {
 
 export interface Client {
   id: string;
-  name: string;       // ENCRYPTED in storage
+  firstName: string;  // ENCRYPTED in storage
+  lastName: string;   // ENCRYPTED in storage
   email?: string;     // ENCRYPTED in storage
   phone: string;      // ENCRYPTED in storage (E.164 before encryption)
   clinicianId?: string;

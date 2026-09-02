@@ -13,6 +13,8 @@ import { useToast } from "@/components/ui/Toast";
 
 interface ClientItem {
   id: string;
+  firstName: string;
+  lastName: string;
   name: string;
   email?: string;
   phone: string;
@@ -21,7 +23,8 @@ interface ClientItem {
 }
 
 interface CsvParsedClient {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
 }
@@ -33,19 +36,12 @@ interface CsvSkippedClient {
 
 type ImportStep = "upload" | "preview" | "importing" | "results";
 
-/**
- * Extract a bare email address from a string that may contain notes.
- * e.g. "jagreene2727@gmail.com (mom's email)" -> "jagreene2727@gmail.com"
- */
 function extractEmail(raw: string): string {
   if (!raw) return "";
   const match = raw.match(/[\w.+-]+@[\w.-]+\.\w+/);
   return match ? match[0] : "";
 }
 
-/**
- * Parse a single CSV line, handling quoted fields correctly.
- */
 function parseCsvLine(line: string): string[] {
   const fields: string[] = [];
   let current = "";
@@ -85,7 +81,8 @@ export default function ClientRoster() {
   const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [editingClient, setEditingClient] = useState<ClientItem | null>(null);
-  const [editName, setEditName] = useState("");
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editClinicianId, setEditClinicianId] = useState("");
@@ -112,7 +109,7 @@ export default function ClientRoster() {
   const [purging, setPurging] = useState(false);
 
   const purgeAllClients = async () => {
-    if (!confirm("⚠️ This will permanently remove ALL clients from the roster. Continue?")) return;
+    if (!confirm("This will permanently remove ALL clients from the roster. Continue?")) return;
     if (!confirm("Are you sure? This cannot be undone.")) return;
     setPurging(true);
     try {
@@ -167,7 +164,8 @@ export default function ClientRoster() {
 
   const openEdit = (client: ClientItem) => {
     setEditingClient(client);
-    setEditName(client.name);
+    setEditFirstName(client.firstName);
+    setEditLastName(client.lastName);
     setEditEmail(client.email || "");
     setEditPhone(client.phone);
     setEditClinicianId(client.clinicianId);
@@ -179,7 +177,8 @@ export default function ClientRoster() {
 
   const closeEdit = () => {
     setEditingClient(null);
-    setEditName("");
+    setEditFirstName("");
+    setEditLastName("");
     setEditEmail("");
     setEditPhone("");
     setEditClinicianId("");
@@ -194,7 +193,8 @@ export default function ClientRoster() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: editName,
+          firstName: editFirstName,
+          lastName: editLastName,
           email: editEmail || undefined,
           phone: editPhone,
           clinicianId: editClinicianId,
@@ -242,18 +242,20 @@ export default function ClientRoster() {
         return;
       }
 
-      // Parse header to find column indices
       const headerFields = parseCsvLine(lines[0]);
       const headers = headerFields.map((h) => h.toLowerCase().replace(/[^a-z]/g, ""));
 
+      const firstNameIdx = headers.findIndex((h) => h === "firstname");
+      const lastNameIdx = headers.findIndex((h) => h === "lastname");
       const nameIdx = headers.findIndex((h) => h === "name" || h === "clientname" || h === "fullname");
       const emailIdx = headers.findIndex((h) => h === "email" || h === "emailaddress");
       const phoneIdx = headers.findIndex((h) =>
         h === "phonenumber" || h === "phone" || h === "mobile" || h === "cell"
       );
 
-      if (nameIdx === -1) {
-        addToast("CSV must have a 'Name' column", "error");
+      const hasSplitName = firstNameIdx !== -1 && lastNameIdx !== -1;
+      if (!hasSplitName && nameIdx === -1) {
+        addToast("CSV must have 'First Name' + 'Last Name' columns (or a single 'Name' column)", "error");
         return;
       }
       if (phoneIdx === -1) {
@@ -266,19 +268,43 @@ export default function ClientRoster() {
 
       for (let i = 1; i < lines.length; i++) {
         const fields = parseCsvLine(lines[i]);
-        const name = fields[nameIdx]?.trim() || "";
+
+        let firstName = "";
+        let lastName = "";
+        if (hasSplitName) {
+          firstName = fields[firstNameIdx]?.trim() || "";
+          lastName = fields[lastNameIdx]?.trim() || "";
+        } else {
+          const fullName = fields[nameIdx]?.trim() || "";
+          const parts = fullName.split(/\s+/);
+          firstName = parts[0] || "";
+          lastName = parts.slice(1).join(" ") || "";
+        }
+
         const rawEmail = emailIdx >= 0 ? (fields[emailIdx]?.trim() || "") : "";
         const phone = fields[phoneIdx]?.trim() || "";
 
-        if (!name) continue; // skip completely empty rows
+        if (!firstName && !lastName) continue;
+
+        const displayName = `${firstName} ${lastName}`.trim();
 
         if (!phone) {
-          skipped.push({ name, reason: "No phone number" });
+          skipped.push({ name: displayName, reason: "No phone number" });
+          continue;
+        }
+
+        if (!firstName) {
+          skipped.push({ name: displayName, reason: "No first name" });
+          continue;
+        }
+        if (!lastName) {
+          skipped.push({ name: displayName, reason: "No last name" });
           continue;
         }
 
         valid.push({
-          name,
+          firstName,
+          lastName,
           email: extractEmail(rawEmail),
           phone,
         });
@@ -368,10 +394,11 @@ export default function ClientRoster() {
       {loading ? (
         <div className="text-center py-8 text-text-secondary">Loading...</div>
       ) : (
-        <Table headers={["Name", "Email", "Phone", "Opted In", ""]}>
+        <Table headers={["First Name", "Last Name", "Email", "Phone", "Opted In", ""]}>
           {filteredClients.map((c) => (
             <tr key={c.id} className="hover:bg-bg-alt">
-              <td className="px-4 py-3 text-sm font-medium text-text">{c.name}</td>
+              <td className="px-4 py-3 text-sm font-medium text-text">{c.firstName}</td>
+              <td className="px-4 py-3 text-sm font-medium text-text">{c.lastName}</td>
               <td className="px-4 py-3 text-sm text-text-secondary">{visiblePhiIds.has(c.id) ? (c.email || "—") : (c.email ? "••••@••••" : "—")}</td>
               <td className="px-4 py-3 text-sm text-text-secondary">{visiblePhiIds.has(c.id) ? c.phone : "••••••••••"}</td>
               <td className="px-4 py-3">
@@ -420,7 +447,8 @@ export default function ClientRoster() {
         {importStep === "upload" && (
           <div className="space-y-4">
             <p className="text-sm text-text-secondary">
-              Upload a CSV file with columns: <span className="font-medium text-text">Name</span>,{" "}
+              Upload a CSV file with columns: <span className="font-medium text-text">First Name</span>,{" "}
+              <span className="font-medium text-text">Last Name</span>,{" "}
               <span className="font-medium text-text">Email</span> (optional),{" "}
               <span className="font-medium text-text">Phone Number</span>. Other columns will be
               ignored.
@@ -479,7 +507,8 @@ export default function ClientRoster() {
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="bg-bg-alt border-b border-border">
-                      <th className="px-3 py-2 text-left font-medium text-text-secondary">Name</th>
+                      <th className="px-3 py-2 text-left font-medium text-text-secondary">First Name</th>
+                      <th className="px-3 py-2 text-left font-medium text-text-secondary">Last Name</th>
                       <th className="px-3 py-2 text-left font-medium text-text-secondary">Email</th>
                       <th className="px-3 py-2 text-left font-medium text-text-secondary">Phone</th>
                     </tr>
@@ -487,7 +516,8 @@ export default function ClientRoster() {
                   <tbody className="divide-y divide-border">
                     {parsedClients.map((c, i) => (
                       <tr key={i}>
-                        <td className="px-3 py-1.5 text-text">{c.name}</td>
+                        <td className="px-3 py-1.5 text-text">{c.firstName}</td>
+                        <td className="px-3 py-1.5 text-text">{c.lastName}</td>
                         <td className="px-3 py-1.5 text-text-secondary">{c.email || "—"}</td>
                         <td className="px-3 py-1.5 text-text-secondary">{c.phone}</td>
                       </tr>
@@ -555,7 +585,10 @@ export default function ClientRoster() {
       {/* Edit Client Modal */}
       <Modal open={!!editingClient} onClose={closeEdit} title="Edit Client">
         <form onSubmit={saveEdit} className="space-y-4">
-          <Input label="Name" value={editName} onChange={(e) => setEditName(e.target.value)} required />
+          <div className="grid grid-cols-2 gap-3">
+            <Input label="First Name" value={editFirstName} onChange={(e) => setEditFirstName(e.target.value)} required />
+            <Input label="Last Name" value={editLastName} onChange={(e) => setEditLastName(e.target.value)} required />
+          </div>
           <Input label="Email" type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
           <Input label="Phone" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="+14355551234" required />
           <Select

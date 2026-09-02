@@ -10,7 +10,8 @@ interface AddClientFormProps {
 }
 
 export default function AddClientForm({ onSuccess }: AddClientFormProps) {
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
   const [clinicianId, setClinicianId] = useState("");
   const [clinicians, setClinicians] = useState<{ id: string; name: string }[]>([]);
@@ -26,7 +27,7 @@ export default function AddClientForm({ onSuccess }: AddClientFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !phone || !clinicianId) return;
+    if (!firstName || !lastName || !phone || !clinicianId) return;
 
     setLoading(true);
     setError("");
@@ -34,7 +35,7 @@ export default function AddClientForm({ onSuccess }: AddClientFormProps) {
     const res = await fetch("/api/admin/clients", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, phone, clinicianId }),
+      body: JSON.stringify({ firstName, lastName, phone, clinicianId }),
     });
 
     if (res.ok) {
@@ -47,7 +48,10 @@ export default function AddClientForm({ onSuccess }: AddClientFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <Input label="Client Name" value={name} onChange={(e) => setName(e.target.value)} required />
+      <div className="grid grid-cols-2 gap-3">
+        <Input label="First Name" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+        <Input label="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+      </div>
       <Input label="Phone (E.164)" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+14355551234" required />
       <Select
         label="Clinician"
