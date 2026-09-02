@@ -89,6 +89,8 @@ export default function ClientRoster() {
   const [editClinicians, setEditClinicians] = useState<{ id: string; name: string }[]>([]);
   const [editSaving, setEditSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [clinicianFilter, setClinicianFilter] = useState("");
+  const [clinicians, setClinicians] = useState<{ id: string; name: string }[]>([]);
   const [visiblePhiIds, setVisiblePhiIds] = useState<Set<string>>(new Set());
   const { addToast } = useToast();
 
@@ -100,7 +102,10 @@ export default function ClientRoster() {
     });
   };
 
+  const clinicianMap = Object.fromEntries(clinicians.map((c) => [c.id, c.name]));
+
   const filteredClients = clients.filter((c) => {
+    if (clinicianFilter && c.clinicianId !== clinicianFilter) return false;
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     return c.name.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q) || c.phone.includes(q);
@@ -149,7 +154,10 @@ export default function ClientRoster() {
       .catch(() => setLoading(false));
   };
 
-  useEffect(() => { loadClients(); }, []);
+  useEffect(() => {
+    loadClients();
+    fetch("/api/admin/clinicians").then((r) => r.json()).then((d) => setClinicians(d.clinicians || [])).catch(() => {});
+  }, []);
 
   const removeClient = async (id: string) => {
     if (!confirm("Remove this client from the survey roster?")) return;
@@ -349,8 +357,20 @@ export default function ClientRoster() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <p className="text-sm text-text-secondary">{clients.length} opted-in clients</p>
+      <div className="flex justify-between items-center flex-wrap gap-2">
+        <div className="flex items-center gap-3">
+          <p className="text-sm text-text-secondary">{filteredClients.length}{clinicianFilter ? ` of ${clients.length}` : ""} opted-in clients</p>
+          <select
+            value={clinicianFilter}
+            onChange={(e) => setClinicianFilter(e.target.value)}
+            className="px-3 py-1.5 rounded-lg border border-border bg-white text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+          >
+            <option value="">All Clinicians</option>
+            {clinicians.filter((c) => c.name).map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
         <div className="flex gap-2">
           <Button onClick={purgeAllClients} size="sm" variant="danger" loading={purging} disabled={clients.length === 0}>
             <IconTrashX size={16} className="mr-1" /> Purge All
@@ -394,11 +414,12 @@ export default function ClientRoster() {
       {loading ? (
         <div className="text-center py-8 text-text-secondary">Loading...</div>
       ) : (
-        <Table headers={["First Name", "Last Name", "Email", "Phone", "Opted In", ""]}>
+        <Table headers={["First Name", "Last Name", "Clinician", "Email", "Phone", "Opted In", ""]}>
           {filteredClients.map((c) => (
             <tr key={c.id} className="hover:bg-bg-alt">
               <td className="px-4 py-3 text-sm font-medium text-text">{c.firstName}</td>
               <td className="px-4 py-3 text-sm font-medium text-text">{c.lastName}</td>
+              <td className="px-4 py-3 text-sm text-text-secondary">{clinicianMap[c.clinicianId] || "—"}</td>
               <td className="px-4 py-3 text-sm text-text-secondary">{visiblePhiIds.has(c.id) ? (c.email || "—") : (c.email ? "••••@••••" : "—")}</td>
               <td className="px-4 py-3 text-sm text-text-secondary">{visiblePhiIds.has(c.id) ? c.phone : "••••••••••"}</td>
               <td className="px-4 py-3">
