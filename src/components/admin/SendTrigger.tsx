@@ -15,6 +15,7 @@ export default function SendTrigger() {
   const [clinicianId, setClinicianId] = useState("");
   const [templateId, setTemplateId] = useState("");
   const [clients, setClients] = useState<{ id: string; name: string; clinicianId: string }[]>([]);
+  const [clinicians, setClinicians] = useState<{ id: string; name: string }[]>([]);
   const [templates, setTemplates] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const { addToast } = useToast();
@@ -25,16 +26,21 @@ export default function SendTrigger() {
 
   useEffect(() => {
     fetch("/api/admin/clients").then((r) => r.json()).then((d) => setClients(d.clients || [])).catch(() => {});
+    fetch("/api/admin/clinicians").then((r) => r.json()).then((d) => setClinicians(d.clinicians || [])).catch(() => {});
     fetch("/api/admin/templates").then((r) => r.json()).then((d) => setTemplates(d.templates || [])).catch(() => {});
   }, []);
 
   useEffect(() => {
     const client = clients.find((c) => c.id === clientId);
-    if (client) setClinicianId(client.clinicianId);
+    if (client?.clinicianId) setClinicianId(client.clinicianId);
   }, [clientId, clients]);
 
   const handleSend = async () => {
-    if (!clientId || !clinicianId || !templateId) return;
+    if (!clientId || !templateId) return;
+    if (!clinicianId) {
+      addToast("Please select a clinician", "error");
+      return;
+    }
     setLoading(true);
     const res = await fetch("/api/sms/send", {
       method: "POST",
@@ -45,8 +51,17 @@ export default function SendTrigger() {
       addToast("Survey SMS sent", "success");
       setClientId("");
       setClientSearch("");
+      setClinicianId("");
     } else {
-      addToast("Failed to send SMS", "error");
+      const data = await res.json().catch(() => ({}));
+      const messages: Record<string, string> = {
+        client_opted_out: "This client has opted out of surveys",
+        rate_limited: "This client was already sent a survey in the last 24 hours",
+        client_not_found: "Client not found",
+        missing_fields: "Missing required fields",
+        sms_failed: "SMS delivery failed — check Telnyx configuration",
+      };
+      addToast(messages[data.error] || "Failed to send SMS", "error");
     }
     setLoading(false);
   };
@@ -61,6 +76,7 @@ export default function SendTrigger() {
             onChange={(e) => {
               setClientSearch(e.target.value);
               setClientId("");
+              setClinicianId("");
               setShowClientDropdown(true);
             }}
             onFocus={() => setShowClientDropdown(true)}
@@ -90,6 +106,15 @@ export default function SendTrigger() {
             </div>
           )}
         </div>
+        <Select
+          label="Clinician"
+          value={clinicianId}
+          onChange={(e) => setClinicianId(e.target.value)}
+          options={[
+            { value: "", label: "Select clinician..." },
+            ...clinicians.map((c) => ({ value: c.id, label: c.name })),
+          ]}
+        />
         <Select
           label="Survey Template"
           value={templateId}

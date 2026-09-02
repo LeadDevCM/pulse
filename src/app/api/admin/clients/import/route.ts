@@ -4,14 +4,29 @@ import { requireRole } from "@/lib/auth-guard";
 import { encrypt } from "@/lib/encryption";
 import { normalizePhone } from "@/lib/phone";
 import { logAudit } from "@/lib/audit";
-import type { Client } from "@/types";
+import type { Client, Clinician } from "@/types";
 
 interface ImportRow {
   firstName: string;
   lastName: string;
   email?: string;
   phone: string;
+  clinicianName?: string;
   clinicianId?: string;
+}
+
+async function buildClinicianNameMap(): Promise<Record<string, string>> {
+  const ids = await kv.smembers("clinician:index");
+  const map: Record<string, string> = {};
+  for (const id of ids) {
+    const raw = await kv.get<string>(`clinician:${id}`);
+    if (!raw) continue;
+    const c: Clinician = typeof raw === "string" ? JSON.parse(raw) : raw;
+    if (c.active) {
+      map[c.name.toLowerCase()] = c.id;
+    }
+  }
+  return map;
 }
 
 export async function POST(request: Request) {
@@ -23,6 +38,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "missing_clients" }, { status: 400 });
   }
 
+  const clinicianNameMap = await buildClinicianNameMap();
+
   let imported = 0;
   let skipped = 0;
   const errors: string[] = [];
@@ -30,7 +47,7 @@ export async function POST(request: Request) {
   for (const row of clients) {
     if (!row.firstName || !row.lastName || !row.phone) {
       skipped++;
-      errors.push(`Skipped: missing name or phone for "${row.firstName || ""} ${row.lastName || ""}".trim() || "unknown"`);
+      errors.push(`Skipped: missing name or phone for "${row.firstName || ""} ${row.lastName || ""}"`);
       continue;
     }
 
@@ -41,6 +58,16 @@ export async function POST(request: Request) {
       continue;
     }
 
+    let clinicianId = row.clinicianId;
+    if (!clinicianId && row.clinicianName) {
+      clinicianId = clinicianNameMap[row.clinicianName.toLowerCase()];
+      if (!clinicianId) {
+        skipped++;
+        errors.push(`Skipped: unknown clinician "${row.clinicianName}" for "${row.firstName} ${row.lastName}"`);
+        continue;
+      }
+    }
+
     const id = crypto.randomUUID();
     const client: Client = {
       id,
@@ -48,7 +75,7 @@ export async function POST(request: Request) {
       lastName: encrypt(row.lastName),
       email: row.email ? encrypt(row.email) : undefined,
       phone: encrypt(phone),
-      clinicianId: row.clinicianId || undefined,
+      clinicianId: clinicianId || undefined,
       optedInAt: new Date().toISOString(),
       active: true,
     };

@@ -27,6 +27,7 @@ interface CsvParsedClient {
   lastName: string;
   email: string;
   phone: string;
+  clinicianName: string;
 }
 
 interface CsvSkippedClient {
@@ -260,6 +261,9 @@ export default function ClientRoster() {
       const phoneIdx = headers.findIndex((h) =>
         h === "phonenumber" || h === "phone" || h === "mobile" || h === "cell"
       );
+      const clinicianIdx = headers.findIndex((h) =>
+        h === "clinician" || h === "therapist" || h === "provider" || h === "counselor"
+      );
 
       const hasSplitName = firstNameIdx !== -1 && lastNameIdx !== -1;
       if (!hasSplitName && nameIdx === -1) {
@@ -291,6 +295,7 @@ export default function ClientRoster() {
 
         const rawEmail = emailIdx >= 0 ? (fields[emailIdx]?.trim() || "") : "";
         const phone = fields[phoneIdx]?.trim() || "";
+        const clinicianName = clinicianIdx >= 0 ? (fields[clinicianIdx]?.trim() || "") : "";
 
         if (!firstName && !lastName) continue;
 
@@ -315,6 +320,7 @@ export default function ClientRoster() {
           lastName,
           email: extractEmail(rawEmail),
           phone,
+          clinicianName,
         });
       }
 
@@ -470,6 +476,7 @@ export default function ClientRoster() {
             <p className="text-sm text-text-secondary">
               Upload a CSV file with columns: <span className="font-medium text-text">First Name</span>,{" "}
               <span className="font-medium text-text">Last Name</span>,{" "}
+              <span className="font-medium text-text">Clinician</span>,{" "}
               <span className="font-medium text-text">Email</span> (optional),{" "}
               <span className="font-medium text-text">Phone Number</span>. Other columns will be
               ignored.
@@ -530,6 +537,7 @@ export default function ClientRoster() {
                     <tr className="bg-bg-alt border-b border-border">
                       <th className="px-3 py-2 text-left font-medium text-text-secondary">First Name</th>
                       <th className="px-3 py-2 text-left font-medium text-text-secondary">Last Name</th>
+                      <th className="px-3 py-2 text-left font-medium text-text-secondary">Clinician</th>
                       <th className="px-3 py-2 text-left font-medium text-text-secondary">Email</th>
                       <th className="px-3 py-2 text-left font-medium text-text-secondary">Phone</th>
                     </tr>
@@ -539,6 +547,7 @@ export default function ClientRoster() {
                       <tr key={i}>
                         <td className="px-3 py-1.5 text-text">{c.firstName}</td>
                         <td className="px-3 py-1.5 text-text">{c.lastName}</td>
+                        <td className="px-3 py-1.5 text-text-secondary">{c.clinicianName || "—"}</td>
                         <td className="px-3 py-1.5 text-text-secondary">{c.email || "—"}</td>
                         <td className="px-3 py-1.5 text-text-secondary">{c.phone}</td>
                       </tr>
