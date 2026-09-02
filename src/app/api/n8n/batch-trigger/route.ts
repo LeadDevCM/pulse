@@ -68,10 +68,15 @@ export async function POST(request: Request) {
   const surveyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/survey/${token}`;
 
   try {
-    await sendSurveyLink(phone, surveyUrl);
+    const result = await sendSurveyLink(phone, surveyUrl);
     send.status = "sent";
     batch.entries[entryIndex].status = "sent";
     batch.entries[entryIndex].sendId = send.id;
+
+    if (result.messageId && result.messageId !== "unknown") {
+      const ninetyDays = 90 * 24 * 60 * 60;
+      await kv.set(`sms:msgid:${result.messageId}`, send.id, { ex: ninetyDays });
+    }
   } catch {
     send.status = "failed";
     batch.entries[entryIndex].status = "failed";

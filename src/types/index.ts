@@ -110,7 +110,8 @@ export type AuditAction =
   | 'login_failed'
   | 'user_created'
   | 'user_modified'
-  | 'clients_imported';
+  | 'clients_imported'
+  | 'clients_purged';
 
 export interface AuditEntry {
   id: string;

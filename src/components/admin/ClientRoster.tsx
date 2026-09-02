@@ -8,7 +8,7 @@ import Modal from "@/components/ui/Modal";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import AddClientForm from "./AddClientForm";
-import { IconEye, IconEyeOff, IconPencil, IconPlus, IconSearch, IconTrash, IconUpload } from "@tabler/icons-react";
+import { IconEye, IconEyeOff, IconPencil, IconPlus, IconSearch, IconTrash, IconTrashX, IconUpload } from "@tabler/icons-react";
 import { useToast } from "@/components/ui/Toast";
 
 interface ClientItem {
@@ -108,6 +108,27 @@ export default function ClientRoster() {
     const q = searchQuery.toLowerCase();
     return c.name.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q) || c.phone.includes(q);
   });
+
+  const [purging, setPurging] = useState(false);
+
+  const purgeAllClients = async () => {
+    if (!confirm("⚠️ This will permanently remove ALL clients from the roster. Continue?")) return;
+    if (!confirm("Are you sure? This cannot be undone.")) return;
+    setPurging(true);
+    try {
+      const res = await fetch("/api/admin/clients/purge", { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        addToast(`${data.purged} client(s) purged`, "success");
+        loadClients();
+      } else {
+        addToast("Failed to purge clients", "error");
+      }
+    } catch {
+      addToast("Network error", "error");
+    }
+    setPurging(false);
+  };
 
   // CSV import state
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -305,6 +326,9 @@ export default function ClientRoster() {
       <div className="flex justify-between items-center">
         <p className="text-sm text-text-secondary">{clients.length} opted-in clients</p>
         <div className="flex gap-2">
+          <Button onClick={purgeAllClients} size="sm" variant="danger" loading={purging} disabled={clients.length === 0}>
+            <IconTrashX size={16} className="mr-1" /> Purge All
+          </Button>
           <Button onClick={() => setShowImport(true)} size="sm" variant="secondary">
             <IconUpload size={16} className="mr-1" /> Import CSV
           </Button>

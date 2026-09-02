@@ -51,6 +51,10 @@ export async function POST(request: Request) {
     await kv.set(`send:${send.id}`, JSON.stringify(send), { ex: ninetyDaysSeconds });
     await kv.set(`send:token:${token}`, JSON.stringify(send), { ex: ninetyDaysSeconds });
 
+    if (result.messageId && result.messageId !== "unknown") {
+      await kv.set(`sms:msgid:${result.messageId}`, send.id, { ex: ninetyDaysSeconds });
+    }
+
     const dateKey = now.toISOString().split("T")[0];
     await kv.sadd(`send:by-date:${dateKey}`, send.id);
 
