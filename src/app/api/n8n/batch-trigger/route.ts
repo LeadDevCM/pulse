@@ -32,6 +32,13 @@ export async function POST(request: Request) {
   }
 
   const client: Client = typeof rawClient === "string" ? JSON.parse(rawClient) : rawClient;
+
+  if (client.optedOut) {
+    batch.entries[entryIndex].status = "failed";
+    await kv.set(`batch:${batchId}`, JSON.stringify(batch));
+    return NextResponse.json({ error: "client_opted_out" }, { status: 422 });
+  }
+
   const phone = decrypt(client.phone);
   const token = generateToken();
   const now = new Date();
@@ -89,6 +96,12 @@ export async function POST(request: Request) {
 
   const dateKey = now.toISOString().split("T")[0];
   await kv.sadd(`send:by-date:${dateKey}`, send.id);
+
+  if (send.status === "sent") {
+    const monthKey = now.toISOString().slice(0, 7);
+    await kv.incr(`stats:sends:${monthKey}`);
+    await kv.incr("stats:sends:all");
+  }
 
   await logAudit({
     action: "survey_sent",

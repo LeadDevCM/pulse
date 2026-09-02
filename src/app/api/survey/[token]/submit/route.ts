@@ -19,10 +19,16 @@ export async function POST(
     return NextResponse.json({ error: result.reason }, { status });
   }
 
+  const lockAcquired = await kv.set(`submit:lock:${token}`, "1", { nx: true, ex: 60 });
+  if (!lockAcquired) {
+    return NextResponse.json({ error: "already_submitted" }, { status: 409 });
+  }
+
   const body = await request.json();
   const answers: SurveyAnswer[] = body.answers;
 
   if (!answers || !Array.isArray(answers)) {
+    await kv.del(`submit:lock:${token}`);
     return NextResponse.json({ error: "invalid_answers" }, { status: 400 });
   }
 
@@ -54,6 +60,10 @@ export async function POST(
   const updatedSend = { ...send, status: "completed" as const, completedAt: now.toISOString() };
   await kv.set(`send:token:${token}`, JSON.stringify(updatedSend));
   await kv.set(`send:${send.id}`, JSON.stringify(updatedSend));
+
+  const monthKey = now.toISOString().slice(0, 7);
+  await kv.incr(`stats:responses:${monthKey}`);
+  await kv.incr("stats:responses:all");
 
   await logAudit({
     action: "response_submitted",

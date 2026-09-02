@@ -6,26 +6,20 @@ export async function GET() {
   const { error } = await requireRole(["partner", "office_manager"]);
   if (error) return error;
 
-  const today = new Date();
-  let totalSendsMonth = 0;
-  let totalCompletedMonth = 0;
-  let totalSendsAll = 0;
-  let totalCompletedAll = 0;
+  const now = new Date();
+  const monthKey = now.toISOString().slice(0, 7);
 
-  // Count sends for the current month
-  for (let i = 0; i < 30; i++) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const dateKey = d.toISOString().split("T")[0];
-    const sends = await kv.smembers(`send:by-date:${dateKey}`);
-    totalSendsMonth += sends.length;
+  const [sendsMonth, responsesMonth, sendsAll, responsesAll] = await Promise.all([
+    kv.get<number>(`stats:sends:${monthKey}`),
+    kv.get<number>(`stats:responses:${monthKey}`),
+    kv.get<number>("stats:sends:all"),
+    kv.get<number>("stats:responses:all"),
+  ]);
 
-    const responses = await kv.smembers(`response:by-date:${dateKey}`);
-    totalCompletedMonth += responses.length;
-  }
-
-  totalSendsAll = totalSendsMonth; // Simplified -- in production, maintain counters
-  totalCompletedAll = totalCompletedMonth;
+  const totalSendsMonth = sendsMonth ?? 0;
+  const totalCompletedMonth = responsesMonth ?? 0;
+  const totalSendsAll = sendsAll ?? 0;
+  const totalCompletedAll = responsesAll ?? 0;
 
   const completionRate = totalSendsMonth > 0
     ? Math.round((totalCompletedMonth / totalSendsMonth) * 100)

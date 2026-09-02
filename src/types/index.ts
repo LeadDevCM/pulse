@@ -23,6 +23,8 @@ export interface Client {
   phone: string;      // ENCRYPTED in storage (E.164 before encryption)
   clinicianId?: string;
   optedInAt: string;
+  optedOut?: boolean;
+  optedOutAt?: string;
   active: boolean;
 }
 
@@ -111,7 +113,8 @@ export type AuditAction =
   | 'user_created'
   | 'user_modified'
   | 'clients_imported'
-  | 'clients_purged';
+  | 'clients_purged'
+  | 'client_opted_out';
 
 export interface AuditEntry {
   id: string;

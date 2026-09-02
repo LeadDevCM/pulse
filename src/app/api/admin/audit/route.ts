@@ -17,7 +17,7 @@ export async function GET(request: Request) {
   const page = Number(url.searchParams.get("page") || "1");
   const offset = (page - 1) * limit;
 
-  const logs = await getAuditLogs(startDate, endDate, limit, offset);
+  const { entries: logs, total } = await getAuditLogs(startDate, endDate, limit, offset);
 
   const action = url.searchParams.get("action");
   const userId = url.searchParams.get("userId");
@@ -26,5 +26,7 @@ export async function GET(request: Request) {
   if (action) filtered = filtered.filter((l) => l.action === action);
   if (userId) filtered = filtered.filter((l) => l.userId === userId);
 
-  return NextResponse.json({ logs: filtered, page, limit });
+  const totalPages = Math.ceil(total / limit);
+
+  return NextResponse.json({ logs: filtered, page, limit, total, totalPages });
 }

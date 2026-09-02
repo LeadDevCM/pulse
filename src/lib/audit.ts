@@ -22,7 +22,13 @@ export async function getAuditLogs(
   endDate: Date,
   limit = 100,
   offset = 0
-): Promise<AuditEntry[]> {
+): Promise<{ entries: AuditEntry[]; total: number }> {
+  const total = await kv.zcount(
+    "audit:index",
+    startDate.getTime(),
+    endDate.getTime()
+  );
+
   const ids = await kv.zrange<string[]>(
     "audit:index",
     startDate.getTime(),
@@ -37,5 +43,5 @@ export async function getAuditLogs(
     })
   );
 
-  return entries.filter((e): e is AuditEntry => e !== null);
+  return { entries: entries.filter((e): e is AuditEntry => e !== null), total };
 }

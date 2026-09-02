@@ -22,6 +22,17 @@ export async function POST(request: Request) {
   }
 
   const client: Client = typeof rawClient === "string" ? JSON.parse(rawClient) : rawClient;
+
+  if (client.optedOut) {
+    return NextResponse.json({ error: "client_opted_out" }, { status: 422 });
+  }
+
+  const COOLDOWN_HOURS = 24;
+  const lastSendTime = await kv.get<number>(`send:cooldown:${clientId}`);
+  if (lastSendTime && Date.now() - lastSendTime < COOLDOWN_HOURS * 60 * 60 * 1000) {
+    return NextResponse.json({ error: "rate_limited", cooldownHours: COOLDOWN_HOURS }, { status: 429 });
+  }
+
   const phone = decrypt(client.phone);
 
   const token = generateToken();
@@ -57,6 +68,12 @@ export async function POST(request: Request) {
 
     const dateKey = now.toISOString().split("T")[0];
     await kv.sadd(`send:by-date:${dateKey}`, send.id);
+
+    await kv.set(`send:cooldown:${clientId}`, Date.now(), { ex: COOLDOWN_HOURS * 60 * 60 });
+
+    const monthKey = now.toISOString().slice(0, 7);
+    await kv.incr(`stats:sends:${monthKey}`);
+    await kv.incr("stats:sends:all");
 
     await logAudit({
       action: "survey_sent",
