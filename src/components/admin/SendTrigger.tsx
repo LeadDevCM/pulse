@@ -6,7 +6,7 @@ import Select from "@/components/ui/Select";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { useToast } from "@/components/ui/Toast";
-import { IconSend } from "@tabler/icons-react";
+import { IconSend, IconX } from "@tabler/icons-react";
 
 export default function SendTrigger() {
   const [clientId, setClientId] = useState("");
@@ -18,6 +18,7 @@ export default function SendTrigger() {
   const [clinicians, setClinicians] = useState<{ id: string; name: string }[]>([]);
   const [templates, setTemplates] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
+  const [sendResult, setSendResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const { addToast } = useToast();
 
   const filteredClients = clients.filter((c) =>
@@ -38,9 +39,13 @@ export default function SendTrigger() {
   const handleSend = async () => {
     if (!clientId || !templateId) return;
     if (!clinicianId) {
-      addToast("Please select a clinician", "error");
+      setSendResult({ type: "error", message: "Please select a clinician" });
       return;
     }
+    const selectedClient = clients.find((c) => c.id === clientId);
+    if (!confirm(`Send survey SMS to ${selectedClient?.name || "this client"}?`)) return;
+
+    setSendResult(null);
     setLoading(true);
     const res = await fetch("/api/sms/send", {
       method: "POST",
@@ -48,6 +53,7 @@ export default function SendTrigger() {
       body: JSON.stringify({ clientId, clinicianId, templateId }),
     });
     if (res.ok) {
+      setSendResult({ type: "success", message: `Survey sent to ${selectedClient?.name || "client"}` });
       addToast("Survey SMS sent", "success");
       setClientId("");
       setClientSearch("");
@@ -61,7 +67,9 @@ export default function SendTrigger() {
         missing_fields: "Missing required fields",
         sms_failed: "SMS delivery failed — check Telnyx configuration",
       };
-      addToast(messages[data.error] || "Failed to send SMS", "error");
+      const msg = messages[data.error] || "Failed to send SMS";
+      setSendResult({ type: "error", message: msg });
+      addToast(msg, "error");
     }
     setLoading(false);
   };
@@ -69,6 +77,18 @@ export default function SendTrigger() {
   return (
     <Card>
       <div className="space-y-4">
+        {sendResult && (
+          <div className={`flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium ${
+            sendResult.type === "success"
+              ? "bg-green-50 border border-green-200 text-green-800"
+              : "bg-red-50 border border-red-200 text-red-800"
+          }`}>
+            <span>{sendResult.message}</span>
+            <button onClick={() => setSendResult(null)} className="ml-2 opacity-60 hover:opacity-100">
+              <IconX size={16} />
+            </button>
+          </div>
+        )}
         <div className="relative">
           <Input
             label="Client"
