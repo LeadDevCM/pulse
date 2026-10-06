@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "cp -r node_modules/postcss/ node_modules/next/node_modules/postcss/"
+    "postinstall": "cp -r node_modules/postcss/ node_modules/next/node_modules/postcss/",
+    "deploy": "vercel --prod",
+    "preview": "vercel"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
