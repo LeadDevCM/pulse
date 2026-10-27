@@ -87,38 +87,31 @@ export async function seedDatabase() {
   // Seed default survey template
   const template: SurveyTemplate = {
     id: uuidv4(),
-    name: "Post-Session Feedback v1",
+    name: "Post-Session Feedback",
+    // Questions approved by Mending Minds (Chelsee, Sept 18, 2026 — "Pulse questions" doc)
     questions: [
       {
         id: uuidv4(),
-        text: "How are you feeling after today's session?",
+        text: "On a scale of 1–7, how heard, respected, and supported did you feel by your therapist?",
         type: "rating",
-        ratingScale: { min: 1, max: 5, minLabel: "Much worse", maxLabel: "Much better" },
+        ratingScale: { min: 1, max: 7, minLabel: "Not at all", maxLabel: "Completely" },
         required: true,
         order: 1,
       },
       {
         id: uuidv4(),
-        text: "Did you feel heard and understood today?",
+        text: "On a scale of 1–7, how satisfied were you with your overall experience at Mending Minds Therapy?",
         type: "rating",
-        ratingScale: { min: 1, max: 5, minLabel: "Not at all", maxLabel: "Completely" },
+        ratingScale: { min: 1, max: 7, minLabel: "Not satisfied", maxLabel: "Very satisfied" },
         required: true,
         order: 2,
       },
       {
         id: uuidv4(),
-        text: "How likely are you to recommend Mending Minds to someone you know?",
-        type: "rating",
-        ratingScale: { min: 1, max: 10, minLabel: "Not likely", maxLabel: "Very likely" },
-        required: true,
-        order: 3,
-      },
-      {
-        id: uuidv4(),
-        text: "Is there anything you'd like us to know?",
+        text: "Is there anything we could do to improve your experience or help you feel better supported?",
         type: "free_text",
         required: false,
-        order: 4,
+        order: 3,
       },
     ],
     active: true,

@@ -22,8 +22,6 @@ type Stage =
   | "q1"
   | "q2"
   | "q3"
-  | "q4"
-  | "q5"
   | "submitting"
   | "thankyou"
   | "google";
@@ -41,51 +39,29 @@ const questions = [
   {
     id: "q1",
     stage: "q1" as Stage,
-    text: "How are you feeling after today’s session?",
-    type: "rating5" as const,
+    text: "On a scale of 1–7, how heard, respected, and supported did you feel by your therapist?",
+    type: "rating7" as const,
     min: 1,
-    max: 5,
-    minLabel: "Much worse",
-    maxLabel: "Much better",
-    required: true,
-  },
-  {
-    id: "q2",
-    stage: "q2" as Stage,
-    text: "Did you feel heard and understood today?",
-    type: "rating5" as const,
-    min: 1,
-    max: 5,
+    max: 7,
     minLabel: "Not at all",
     maxLabel: "Completely",
     required: true,
   },
   {
+    id: "q2",
+    stage: "q2" as Stage,
+    text: "On a scale of 1–7, how satisfied were you with your overall experience at Mending Minds Therapy?",
+    type: "rating7" as const,
+    min: 1,
+    max: 7,
+    minLabel: "Not satisfied",
+    maxLabel: "Very satisfied",
+    required: true,
+  },
+  {
     id: "q3",
     stage: "q3" as Stage,
-    text: "How comfortable did you feel in our space?",
-    type: "rating5" as const,
-    min: 1,
-    max: 5,
-    minLabel: "Not comfortable",
-    maxLabel: "Very comfortable",
-    required: true,
-  },
-  {
-    id: "q4",
-    stage: "q4" as Stage,
-    text: "How likely are you to recommend Mending Minds to someone you know?",
-    type: "rating10" as const,
-    min: 1,
-    max: 10,
-    minLabel: "Not likely",
-    maxLabel: "Very likely",
-    required: true,
-  },
-  {
-    id: "q5",
-    stage: "q5" as Stage,
-    text: "Is there anything you’d like us to know?",
+    text: "Is there anything we could do to improve your experience or help you feel better supported?",
     type: "freetext" as const,
     min: 0,
     max: 0,
@@ -95,7 +71,7 @@ const questions = [
   },
 ];
 
-const questionStages: Stage[] = ["q1", "q2", "q3", "q4", "q5"];
+const questionStages: Stage[] = ["q1", "q2", "q3"];
 
 export default function DemoPage() {
   const [stage, setStage] = useState<Stage>("sms");
@@ -183,7 +159,7 @@ export default function DemoPage() {
                 key={n}
                 onClick={() => handleRatingSelect(q.id, n)}
                 style={{
-                  minWidth: q.type === "rating10" ? "36px" : "48px",
+                  minWidth: "40px",
                   height: "44px",
                   borderRadius: "8px",
                   border: `1.5px solid ${selected ? GOLD : BORDER}`,
