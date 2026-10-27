@@ -62,7 +62,7 @@ export async function POST(request: Request) {
     await kv.set(`send:${send.id}`, JSON.stringify(send), { ex: ninetyDaysSeconds });
     await kv.set(`send:token:${token}`, JSON.stringify(send), { ex: ninetyDaysSeconds });
 
-    if (result.messageId && result.messageId !== "unknown") {
+    if (result.deliveryMode === "telnyx" && result.messageId && result.messageId !== "unknown") {
       await kv.set(`sms:msgid:${result.messageId}`, send.id, { ex: ninetyDaysSeconds });
     }
 
@@ -81,10 +81,16 @@ export async function POST(request: Request) {
       userRole: session.user.role,
       resourceType: "survey",
       resourceId: send.id,
-      metadata: { clientId, clinicianId, messageId: result.messageId },
+      metadata: { clientId, clinicianId, messageId: result.messageId, deliveryMode: result.deliveryMode },
     });
 
-    return NextResponse.json({ success: true, sendId: send.id, token });
+    // In manual delivery mode the link is handed back to the sender so it can
+    // be delivered by hand. The URL carries only an opaque token — no PHI.
+    if (result.deliveryMode === "manual") {
+      return NextResponse.json({ success: true, sendId: send.id, token, deliveryMode: "manual", surveyUrl });
+    }
+
+    return NextResponse.json({ success: true, sendId: send.id, token, deliveryMode: "telnyx" });
   } catch (err: unknown) {
     send.status = "failed";
     await kv.set(`send:${send.id}`, JSON.stringify(send));
