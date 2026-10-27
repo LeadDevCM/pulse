@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { kv } from "@/lib/kv";
 import { generateToken } from "@/lib/tokens";
 import { decrypt } from "@/lib/encryption";
-import { sendSurveyLink } from "@/lib/telnyx";
+import { sendSurveyLink } from "@/lib/sms";
 import { logAudit } from "@/lib/audit";
 import type { ScheduledBatch, Client, SurveySend } from "@/types";
 

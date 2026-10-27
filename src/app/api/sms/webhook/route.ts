@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { kv } from "@/lib/kv";
 import { readTelnyxWebhook } from "@/lib/telnyx-webhook";
-import type { SurveySend } from "@/types";
+import { updateSendStatus } from "@/lib/send-status";
 
 type TelnyxEvent = { data?: { event_type?: string; payload?: { id?: string; to?: { status?: string }[] } } };
 
@@ -16,7 +15,6 @@ export async function POST(request: Request) {
 
   const eventType = event.event_type;
   const messageId = event.payload?.id;
-
   if (!messageId) {
     return NextResponse.json({ received: true });
   }
@@ -31,21 +29,6 @@ export async function POST(request: Request) {
     }
   }
 
-  if (newStatus) {
-    const sendId = await kv.get<string>(`sms:msgid:${messageId}`);
-    if (sendId) {
-      const raw = await kv.get<string>(`send:${sendId}`);
-      if (raw) {
-        const send: SurveySend = typeof raw === "string" ? JSON.parse(raw) : raw;
-        if (send.status !== "completed") {
-          send.status = newStatus;
-          const ninetyDaysSeconds = 90 * 24 * 60 * 60;
-          await kv.set(`send:${sendId}`, JSON.stringify(send), { ex: ninetyDaysSeconds });
-          await kv.set(`send:token:${send.token}`, JSON.stringify(send), { ex: ninetyDaysSeconds });
-        }
-      }
-    }
-  }
-
+  if (newStatus) await updateSendStatus(messageId, newStatus);
   return NextResponse.json({ received: true });
 }

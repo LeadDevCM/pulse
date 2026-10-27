@@ -3,7 +3,7 @@ import { kv } from "@/lib/kv";
 import { requireRole } from "@/lib/auth-guard";
 import { generateToken } from "@/lib/tokens";
 import { decrypt } from "@/lib/encryption";
-import { sendSurveyLink } from "@/lib/telnyx";
+import { sendSurveyLink } from "@/lib/sms";
 import { logAudit } from "@/lib/audit";
 import type { Client, SurveySend } from "@/types";
 
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
     await kv.set(`send:${send.id}`, JSON.stringify(send), { ex: ninetyDaysSeconds });
     await kv.set(`send:token:${token}`, JSON.stringify(send), { ex: ninetyDaysSeconds });
 
-    if (result.deliveryMode === "telnyx" && result.messageId && result.messageId !== "unknown") {
+    if (result.deliveryMode !== "manual" && result.messageId && result.messageId !== "unknown") {
       await kv.set(`sms:msgid:${result.messageId}`, send.id, { ex: ninetyDaysSeconds });
     }
 
@@ -90,7 +90,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, sendId: send.id, token, deliveryMode: "manual", surveyUrl });
     }
 
-    return NextResponse.json({ success: true, sendId: send.id, token, deliveryMode: "telnyx" });
+    return NextResponse.json({ success: true, sendId: send.id, token, deliveryMode: result.deliveryMode });
   } catch (err: unknown) {
     send.status = "failed";
     await kv.set(`send:${send.id}`, JSON.stringify(send), { ex: 90 * 24 * 60 * 60 });
