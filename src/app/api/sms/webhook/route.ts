@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { kv } from "@/lib/kv";
+import { readTelnyxWebhook } from "@/lib/telnyx-webhook";
 import type { SurveySend } from "@/types";
 
-export async function POST(request: Request) {
-  const body = await request.json();
+type TelnyxEvent = { data?: { event_type?: string; payload?: { id?: string; to?: { status?: string }[] } } };
 
-  const event = body?.data;
+export async function POST(request: Request) {
+  const verified = await readTelnyxWebhook<TelnyxEvent>(request);
+  if (!verified.ok) return verified.response;
+
+  const event = verified.body?.data;
   if (!event) {
     return NextResponse.json({ error: "invalid_payload" }, { status: 400 });
   }

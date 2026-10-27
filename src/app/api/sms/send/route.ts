@@ -93,7 +93,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, sendId: send.id, token, deliveryMode: "telnyx" });
   } catch (err: unknown) {
     send.status = "failed";
-    await kv.set(`send:${send.id}`, JSON.stringify(send));
+    await kv.set(`send:${send.id}`, JSON.stringify(send), { ex: 90 * 24 * 60 * 60 });
     const detail = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: "sms_failed", detail }, { status: 500 });
   }

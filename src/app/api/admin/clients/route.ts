@@ -3,6 +3,7 @@ import { kv } from "@/lib/kv";
 import { requireRole } from "@/lib/auth-guard";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { logAudit } from "@/lib/audit";
+import { normalizePhone, phoneIndexKey } from "@/lib/phone";
 import type { Client } from "@/types";
 
 export async function GET(request: Request) {
@@ -49,13 +50,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "missing_fields" }, { status: 400 });
   }
 
+  const normalizedPhone = normalizePhone(phone);
+  if (!normalizedPhone) {
+    return NextResponse.json({ error: "invalid_phone" }, { status: 400 });
+  }
+
   const id = crypto.randomUUID();
   const client: Client = {
     id,
     firstName: encrypt(firstName),
     lastName: encrypt(lastName),
     email: email ? encrypt(email) : undefined,
-    phone: encrypt(phone),
+    phone: encrypt(normalizedPhone),
     clinicianId: clinicianId || undefined,
     optedInAt: new Date().toISOString(),
     active: true,
@@ -63,6 +69,7 @@ export async function POST(request: Request) {
 
   await kv.set(`client:${id}`, JSON.stringify(client));
   await kv.sadd("client:index", id);
+  await kv.set(phoneIndexKey(normalizedPhone), id);
 
   await logAudit({
     action: "client_added",

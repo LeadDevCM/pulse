@@ -1,3 +1,5 @@
+import crypto from "crypto";
+
 /**
  * Normalize a raw phone string to E.164 format (+1XXXXXXXXXX).
  * Handles formats like:
@@ -23,3 +25,16 @@ export function normalizePhone(raw: string): string | null {
 
   return null;
 }
+
+/**
+ * Keyed one-way hash of an E.164 phone number, used as a lookup index
+ * (`client:phone:{hash}` -> clientId) so inbound SMS can be matched to a
+ * client without decrypting every record. HMAC with the encryption key means
+ * the index is useless without the key; the plaintext number is never stored.
+ */
+export function phoneHash(e164: string): string {
+  const key = Buffer.from(process.env.ENCRYPTION_KEY!, "hex");
+  return crypto.createHmac("sha256", key).update(`phone:${e164}`).digest("hex");
+}
+
+export const phoneIndexKey = (e164: string) => `client:phone:${phoneHash(e164)}`;

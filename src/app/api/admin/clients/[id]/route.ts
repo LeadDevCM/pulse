@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { kv } from "@/lib/kv";
 import { requireRole } from "@/lib/auth-guard";
 import { encrypt, decrypt } from "@/lib/encryption";
-import { normalizePhone } from "@/lib/phone";
+import { normalizePhone, phoneIndexKey } from "@/lib/phone";
 import { logAudit } from "@/lib/audit";
 import type { Client } from "@/types";
 
@@ -36,6 +36,11 @@ export async function PUT(
     if (!normalized) {
       return NextResponse.json({ error: "invalid_phone" }, { status: 400 });
     }
+    const previous = decrypt(client.phone);
+    if (previous !== normalized) {
+      await kv.del(phoneIndexKey(previous));
+      await kv.set(phoneIndexKey(normalized), id);
+    }
     client.phone = encrypt(normalized);
   }
   if (updates.clinicianId !== undefined) {
@@ -45,7 +50,7 @@ export async function PUT(
   await kv.set(`client:${id}`, JSON.stringify(client));
 
   await logAudit({
-    action: "client_added",
+    action: "client_updated",
     userId: session.user.id,
     userRole: session.user.role,
     resourceType: "client",
@@ -85,6 +90,7 @@ export async function DELETE(
   client.active = false;
   await kv.set(`client:${id}`, JSON.stringify(client));
   await kv.srem("client:index", id);
+  await kv.del(phoneIndexKey(decrypt(client.phone)));
 
   await logAudit({
     action: "client_removed",

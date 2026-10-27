@@ -115,7 +115,9 @@ export type AuditAction =
   | 'user_modified'
   | 'clients_imported'
   | 'clients_purged'
-  | 'client_opted_out';
+  | 'client_opted_out'
+  | 'client_opted_in'
+  | 'client_updated';
 
 export interface AuditEntry {
   id: string;

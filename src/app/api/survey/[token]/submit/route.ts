@@ -57,9 +57,16 @@ export async function POST(
     member: token,
   });
 
+  // Keep the send records on the same 90-day clock they started on. Writing
+  // them back without a TTL would make completed sends live forever.
   const updatedSend = { ...send, status: "completed" as const, completedAt: now.toISOString() };
-  await kv.set(`send:token:${token}`, JSON.stringify(updatedSend));
-  await kv.set(`send:${send.id}`, JSON.stringify(updatedSend));
+  const sentAtMs = Date.parse(send.sentAt) || now.getTime();
+  const remainingSeconds = Math.max(
+    60,
+    NINETY_DAYS_SECONDS - Math.floor((now.getTime() - sentAtMs) / 1000)
+  );
+  await kv.set(`send:token:${token}`, JSON.stringify(updatedSend), { ex: remainingSeconds });
+  await kv.set(`send:${send.id}`, JSON.stringify(updatedSend), { ex: remainingSeconds });
 
   const monthKey = now.toISOString().slice(0, 7);
   await kv.incr(`stats:responses:${monthKey}`);

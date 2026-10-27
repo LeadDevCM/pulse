@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { kv } from "@/lib/kv";
 import { requireRole } from "@/lib/auth-guard";
 import { encrypt } from "@/lib/encryption";
-import { normalizePhone } from "@/lib/phone";
+import { normalizePhone, phoneIndexKey } from "@/lib/phone";
 import { logAudit } from "@/lib/audit";
 import type { Client, Clinician } from "@/types";
 
@@ -82,6 +82,7 @@ export async function POST(request: Request) {
 
     await kv.set(`client:${id}`, JSON.stringify(client));
     await kv.sadd("client:index", id);
+    await kv.set(phoneIndexKey(phone), id);
     imported++;
   }
 
