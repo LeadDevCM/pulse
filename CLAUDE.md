@@ -10,7 +10,7 @@ HIPAA-compliant SMS survey platform for Mending Minds Therapy (Cedar City, UT).
 - **Styling**: Tailwind CSS v4 with custom theme tokens in `globals.css`
 - **Data**: Vercel KV (Redis) with AES-256-GCM encryption for all PHI
 - **Auth**: NextAuth.js v4 (credentials provider, JWT sessions, 30min timeout)
-- **SMS**: Telnyx (HIPAA tier, toll-free)
+- **SMS**: Twilio toll-free (HIPAA-eligible, BAA) by default; Telnyx, Sendblue and a generic webhook are selectable via `SMS_DELIVERY_MODE` (`lib/sms.ts`)
 - **Automation**: n8n (self-hosted) for batch scheduling and auto-purge cron
 - **Charts**: Recharts
 - **Icons**: Tabler Icons + Phosphor Icons only (never Lucide/Feather/Heroicons/emoji)
@@ -24,7 +24,7 @@ src/
     api/         — REST API routes
     login/       — Login page
   components/    — React components (ui/, survey/, dashboard/, admin/, layout/, auth/)
-  lib/           — Core libraries (encryption, audit, auth-guard, telnyx, tokens, seed)
+  lib/           — Core libraries (encryption, audit, auth-guard, sms + providers, survey-dispatch, inbound-sms, tokens, seed)
   types/         — TypeScript types and NextAuth augmentation
 ```
 

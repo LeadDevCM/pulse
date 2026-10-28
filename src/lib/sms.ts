@@ -2,23 +2,25 @@
  * SMS delivery dispatcher.
  *
  * SMS_DELIVERY_MODE selects the provider:
- *  - "sendblue": iMessage/SMS via Sendblue (dedicated line on the AI Agent plan).
+ *  - "twilio":   toll-free SMS via Twilio Programmable Messaging (HIPAA-eligible, BAA). Default.
+ *  - "telnyx":   toll-free SMS via Telnyx (HIPAA tier, BAA).
+ *  - "sendblue": iMessage/SMS via Sendblue.
  *  - "webhook":  POST to SMS_WEBHOOK_URL (e.g. a Zapier catch hook that sends the text).
- *  - "telnyx":   toll-free SMS via Telnyx (HIPAA tier, BAA). Default.
  */
+import { sendViaTwilio } from "@/lib/twilio";
 import { sendViaTelnyx } from "@/lib/telnyx";
 import { sendViaSendblue } from "@/lib/sendblue";
 import { sendViaWebhook } from "@/lib/webhook-sms";
 
-export type DeliveryMode = "telnyx" | "sendblue" | "webhook";
+export type DeliveryMode = "twilio" | "telnyx" | "sendblue" | "webhook";
 
 export function getDeliveryMode(): DeliveryMode {
   const m = process.env.SMS_DELIVERY_MODE;
-  return m === "sendblue" || m === "webhook" ? m : "telnyx";
+  return m === "telnyx" || m === "sendblue" || m === "webhook" ? m : "twilio";
 }
 
 export const SURVEY_SMS_TEXT = (surveyUrl: string) =>
-  `Mending Minds values your feedback. Please take a moment to share your experience: ${surveyUrl}`;
+  `Mending Minds values your feedback. Please take a moment to share your experience: ${surveyUrl} Reply STOP to opt out.`;
 
 export interface SendResult {
   /** Provider message id, used to correlate status webhooks. */
@@ -31,9 +33,10 @@ export interface SendResult {
 export async function sendText(toPhone: string, text: string, extra: { surveyUrl?: string } = {}): Promise<SendResult> {
   const mode = getDeliveryMode();
   const r =
-    mode === "sendblue" ? await sendViaSendblue(toPhone, text)
+    mode === "telnyx" ? await sendViaTelnyx(toPhone, text)
+    : mode === "sendblue" ? await sendViaSendblue(toPhone, text)
     : mode === "webhook" ? await sendViaWebhook(toPhone, text, extra)
-    : await sendViaTelnyx(toPhone, text);
+    : await sendViaTwilio(toPhone, text);
   return { ...r, deliveryMode: mode };
 }
 
