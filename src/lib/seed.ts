@@ -41,8 +41,8 @@ export async function seedDatabase() {
     },
     {
       id: uuidv4(),
-      name: "Kayley",
-      email: "kayley@mendingmindstherapy.com",
+      name: "Michelle",
+      email: "michelle@mendingmindstherapy.com",
       passwordHash: defaultPassword,
       role: "office_manager",
       active: true,

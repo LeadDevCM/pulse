@@ -7,7 +7,7 @@ import { phoneIndexKey } from "@/lib/phone";
 import type { Client } from "@/types";
 
 export async function POST() {
-  const { error, session } = await requireRole(["partner"]);
+  const { error, session } = await requireRole(["partner", "office_manager"]);
   if (error) return error;
 
   const clientIds = await kv.smembers("client:index");
