@@ -6,8 +6,7 @@ import Select from "@/components/ui/Select";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { useToast } from "@/components/ui/Toast";
-import { IconSend, IconX, IconCopy, IconExternalLink, IconCheck } from "@tabler/icons-react";
-import QRCode from "qrcode";
+import { IconSend, IconX } from "@tabler/icons-react";
 
 export default function SendTrigger() {
   const [clientId, setClientId] = useState("");
@@ -20,8 +19,6 @@ export default function SendTrigger() {
   const [templates, setTemplates] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [sendResult, setSendResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
-  const [manualLink, setManualLink] = useState<{ url: string; clientName: string; qr: string } | null>(null);
-  const [copied, setCopied] = useState(false);
   const { addToast } = useToast();
 
   const filteredClients = clients.filter((c) =>
@@ -49,8 +46,6 @@ export default function SendTrigger() {
     if (!confirm(`Send survey to ${selectedClient?.name || "this client"}?`)) return;
 
     setSendResult(null);
-    setManualLink(null);
-    setCopied(false);
     setLoading(true);
     const res = await fetch("/api/sms/send", {
       method: "POST",
@@ -59,11 +54,13 @@ export default function SendTrigger() {
     });
     if (res.ok) {
       const data = await res.json().catch(() => ({}));
-      if (data.deliveryMode === "manual" && data.surveyUrl) {
-        const qr = await QRCode.toDataURL(data.surveyUrl, { width: 220, margin: 1 }).catch(() => "");
-        setManualLink({ url: data.surveyUrl, clientName: selectedClient?.name || "client", qr });
-        setSendResult({ type: "success", message: `Survey link ready for ${selectedClient?.name || "client"} — deliver it below` });
-        addToast("Survey link ready", "success");
+      if (data.consentRequested) {
+        const name = selectedClient?.name || "client";
+        const msg = data.prompted
+          ? `Consent request texted to ${name}. The survey will send automatically when they reply YES.`
+          : `${name} was already asked to reply YES. The survey will send when they do.`;
+        setSendResult({ type: "success", message: msg });
+        addToast("Awaiting YES reply", "success");
       } else {
         setSendResult({ type: "success", message: `Survey sent to ${selectedClient?.name || "client"}` });
         addToast("Survey SMS sent", "success");
@@ -101,45 +98,6 @@ export default function SendTrigger() {
             <button onClick={() => setSendResult(null)} className="ml-2 opacity-60 hover:opacity-100">
               <IconX size={16} />
             </button>
-          </div>
-        )}
-        {manualLink && (
-          <div className="rounded-lg border border-border bg-bg-alt p-4 space-y-3">
-            <div className="text-sm font-medium text-text">
-              Manual delivery — text this link to {manualLink.clientName}, or have them scan the code.
-            </div>
-            <div className="flex flex-col sm:flex-row gap-4 items-start">
-              {manualLink.qr && (
-                <img src={manualLink.qr} alt="Survey link QR code" width={220} height={220} className="rounded-md bg-white shrink-0" />
-              )}
-              <div className="flex-1 min-w-0 space-y-2">
-                <input
-                  readOnly
-                  value={manualLink.url}
-                  onFocus={(e) => e.currentTarget.select()}
-                  className="w-full px-3 py-2 text-sm font-mono rounded-lg border border-border bg-bg text-text"
-                />
-                <div className="flex gap-2 flex-wrap">
-                  <Button
-                    variant="secondary"
-                    onClick={async () => {
-                      await navigator.clipboard.writeText(manualLink.url).catch(() => {});
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 2000);
-                    }}
-                  >
-                    {copied ? <IconCheck size={16} className="mr-2" /> : <IconCopy size={16} className="mr-2" />}
-                    {copied ? "Copied" : "Copy link"}
-                  </Button>
-                  <Button variant="secondary" onClick={() => window.open(manualLink.url, "_blank", "noopener")}>
-                    <IconExternalLink size={16} className="mr-2" /> Open survey
-                  </Button>
-                </div>
-                <p className="text-xs text-text-secondary">
-                  The link is single-use and expires automatically. It contains no client information.
-                </p>
-              </div>
-            </div>
           </div>
         )}
         <div className="relative">

@@ -2,6 +2,7 @@ import { kv } from "@/lib/kv";
 import { decrypt } from "@/lib/encryption";
 import { logAudit } from "@/lib/audit";
 import { normalizePhone, phoneIndexKey } from "@/lib/phone";
+import { confirmConsentAndRelease, doubleOptInEnabled } from "@/lib/survey-dispatch";
 import type { Client } from "@/types";
 
 /**
@@ -60,23 +61,31 @@ export async function handleInboundSms(fromPhone: string | undefined, text: stri
   if (!match) return "ignored";
 
   const { id, client } = match;
-  if (optingOut && !client.optedOut) {
+  if (optingOut) {
+    if (client.optedOut) return "ignored";
     client.optedOut = true;
     client.optedOutAt = new Date().toISOString();
-  } else if (optingIn && client.optedOut) {
-    client.optedOut = false;
-    client.optedOutAt = undefined;
-  } else {
-    return "ignored";
+    await kv.set(`client:${id}`, JSON.stringify(client));
+    await logAudit({ action: "client_opted_out", userId: "system", userRole: "system", resourceType: "client", resourceId: id });
+    return "opted_out";
   }
 
-  await kv.set(`client:${id}`, JSON.stringify(client));
-  await logAudit({
-    action: optingOut ? "client_opted_out" : "client_opted_in",
-    userId: "system",
-    userRole: "system",
-    resourceType: "client",
-    resourceId: id,
-  });
-  return optingOut ? "opted_out" : "opted_in";
+  // Opting in: clear any opt-out, and (with double opt-in) confirm consent and
+  // release a survey that was parked waiting on this reply.
+  let changed = false;
+  if (client.optedOut) {
+    client.optedOut = false;
+    client.optedOutAt = undefined;
+    changed = true;
+    await kv.set(`client:${id}`, JSON.stringify(client));
+    await logAudit({ action: "client_opted_in", userId: "system", userRole: "system", resourceType: "client", resourceId: id });
+  }
+  if (doubleOptInEnabled() && client.smsConsent !== "confirmed") {
+    await confirmConsentAndRelease(id, client);
+    changed = true;
+  } else if (doubleOptInEnabled()) {
+    // Already confirmed; still release anything parked.
+    await confirmConsentAndRelease(id, client);
+  }
+  return changed ? "opted_in" : "ignored";
 }

@@ -26,6 +26,10 @@ export interface Client {
   optedInAt: string;
   optedOut?: boolean;
   optedOutAt?: string;
+  /** Double opt-in by text (SMS_DOUBLE_OPT_IN). Unset = never prompted. */
+  smsConsent?: 'pending' | 'confirmed';
+  smsConsentRequestedAt?: string;
+  smsConsentConfirmedAt?: string;
   active: boolean;
 }
 
@@ -93,7 +97,7 @@ export interface BatchEntry {
   clinicianId: string;
   appointmentTime: string;
   sendAfterMinutes: number;
-  status: 'pending' | 'sent' | 'failed';
+  status: 'pending' | 'sent' | 'failed' | 'consent_pending';
   sendId?: string;
 }
 
@@ -117,6 +121,8 @@ export type AuditAction =
   | 'clients_purged'
   | 'client_opted_out'
   | 'client_opted_in'
+  | 'sms_consent_requested'
+  | 'sms_consent_confirmed'
   | 'client_updated';
 
 export interface AuditEntry {

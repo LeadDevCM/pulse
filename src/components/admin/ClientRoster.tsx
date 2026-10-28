@@ -20,6 +20,8 @@ interface ClientItem {
   phone: string;
   clinicianId: string;
   optedInAt: string;
+  optedOut?: boolean;
+  smsConsent?: "pending" | "confirmed";
 }
 
 interface CsvParsedClient {
@@ -429,7 +431,16 @@ export default function ClientRoster() {
               <td className="px-4 py-3 text-sm text-text-secondary">{visiblePhiIds.has(c.id) ? (c.email || "—") : (c.email ? "••••@••••" : "—")}</td>
               <td className="px-4 py-3 text-sm text-text-secondary">{visiblePhiIds.has(c.id) ? c.phone : "••••••••••"}</td>
               <td className="px-4 py-3">
-                <Badge variant="success">{new Date(c.optedInAt).toLocaleDateString()}</Badge>
+                <div className="flex flex-wrap items-center gap-1">
+                  <Badge variant="success">{new Date(c.optedInAt).toLocaleDateString()}</Badge>
+                  {c.optedOut ? (
+                    <Badge variant="error">Opted out</Badge>
+                  ) : c.smsConsent === "confirmed" ? (
+                    <Badge variant="success">Replied YES</Badge>
+                  ) : c.smsConsent === "pending" ? (
+                    <Badge variant="warning">Awaiting YES</Badge>
+                  ) : null}
+                </div>
               </td>
               <td className="px-4 py-3 text-right">
                 <div className="flex items-center justify-end gap-1">

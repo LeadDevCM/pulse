@@ -43,6 +43,10 @@ export async function PUT(
     }
     client.phone = encrypt(normalized);
   }
+  if (updates.smsConsent === "confirmed" || updates.smsConsent === "pending") {
+    client.smsConsent = updates.smsConsent;
+    if (updates.smsConsent === "confirmed") client.smsConsentConfirmedAt = new Date().toISOString();
+  }
   if (updates.clinicianId !== undefined) {
     client.clinicianId = updates.clinicianId === "" ? undefined : updates.clinicianId;
   }

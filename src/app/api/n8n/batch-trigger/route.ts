@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 import { kv } from "@/lib/kv";
-import { generateToken } from "@/lib/tokens";
-import { decrypt } from "@/lib/encryption";
-import { sendSurveyLink } from "@/lib/sms";
-import { logAudit } from "@/lib/audit";
-import type { ScheduledBatch, Client, SurveySend } from "@/types";
+import { dispatchSurvey } from "@/lib/survey-dispatch";
+import type { ScheduledBatch, Client } from "@/types";
 
 export async function POST(request: Request) {
   const secret = request.headers.get("x-webhook-secret");
@@ -39,12 +36,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "client_opted_out" }, { status: 422 });
   }
 
-  const phone = decrypt(client.phone);
-  const token = generateToken();
-  const now = new Date();
-  const expiryHours = Number(process.env.SURVEY_LINK_EXPIRY_HOURS || 48);
-  const expiresAt = new Date(now.getTime() + expiryHours * 60 * 60 * 1000);
-
   // Get active template
   const templateIds = await kv.smembers("survey:template:index");
   let templateId = "";
@@ -60,57 +51,33 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "no_active_template" }, { status: 500 });
   }
 
-  const send: SurveySend = {
-    id: `send:${crypto.randomUUID()}`,
-    clientId: entry.clientId,
-    clinicianId: entry.clinicianId,
-    templateId,
-    token,
-    sentAt: now.toISOString(),
-    sentBy: batch.scheduledBy,
-    status: "pending",
-    expiresAt: expiresAt.toISOString(),
-  };
-
-  const surveyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/survey/${token}`;
-
+  let result;
   try {
-    const result = await sendSurveyLink(phone, surveyUrl);
-    send.status = "sent";
-    batch.entries[entryIndex].status = "sent";
-    batch.entries[entryIndex].sendId = send.id;
-
-    if (result.messageId && result.messageId !== "unknown") {
-      const ninetyDays = 90 * 24 * 60 * 60;
-      await kv.set(`sms:msgid:${result.messageId}`, send.id, { ex: ninetyDays });
-    }
+    result = await dispatchSurvey({
+      clientId: entry.clientId,
+      client,
+      clinicianId: entry.clinicianId,
+      templateId,
+      sentBy: batch.scheduledBy,
+      sentByRole: "system",
+    });
   } catch {
-    send.status = "failed";
-    batch.entries[entryIndex].status = "failed";
+    result = null;
   }
 
-  const ninetyDaysSeconds = 90 * 24 * 60 * 60;
-  await kv.set(`send:${send.id}`, JSON.stringify(send), { ex: ninetyDaysSeconds });
-  await kv.set(`send:token:${token}`, JSON.stringify(send), { ex: ninetyDaysSeconds });
+  if (!result || result.kind === "failed") {
+    batch.entries[entryIndex].status = "failed";
+  } else if (result.kind === "consent_requested") {
+    batch.entries[entryIndex].status = "consent_pending";
+  } else {
+    batch.entries[entryIndex].status = "sent";
+    batch.entries[entryIndex].sendId = result.send.id;
+  }
   await kv.set(`batch:${batchId}`, JSON.stringify(batch));
 
-  const dateKey = now.toISOString().split("T")[0];
-  await kv.sadd(`send:by-date:${dateKey}`, send.id);
-
-  if (send.status === "sent") {
-    const monthKey = now.toISOString().slice(0, 7);
-    await kv.incr(`stats:sends:${monthKey}`);
-    await kv.incr("stats:sends:all");
-  }
-
-  await logAudit({
-    action: "survey_sent",
-    userId: batch.scheduledBy,
-    userRole: "system",
-    resourceType: "survey",
-    resourceId: send.id,
-    metadata: { batchId, entryIndex: String(entryIndex) },
+  return NextResponse.json({
+    success: true,
+    status: batch.entries[entryIndex].status,
+    sendId: result && result.kind === "sent" ? result.send.id : undefined,
   });
-
-  return NextResponse.json({ success: true, sendId: send.id });
 }
