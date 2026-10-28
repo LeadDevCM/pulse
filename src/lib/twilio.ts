@@ -12,16 +12,19 @@
  */
 import crypto from "crypto";
 
+const env = (k: string) => (process.env[k] ?? "").trim().replace(/^["']|["']$/g, "");
+
 function creds() {
-  const sid = process.env.TWILIO_ACCOUNT_SID;
-  const token = process.env.TWILIO_AUTH_TOKEN;
+  const sid = env("TWILIO_ACCOUNT_SID");
+  const token = env("TWILIO_AUTH_TOKEN");
   if (!sid || !token) throw new Error("TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN are not configured");
+  if (!/^AC[0-9a-f]{32}$/i.test(sid)) throw new Error(`TWILIO_ACCOUNT_SID looks wrong (got ${sid.length} chars, expected AC + 32 hex)`);
   return { sid, token };
 }
 
 export function twilioStatusCallbackUrl(): string | undefined {
-  const base = process.env.NEXT_PUBLIC_APP_URL;
-  return base ? `${base}/api/sms/twilio/status` : undefined;
+  const base = env("NEXT_PUBLIC_APP_URL").replace(/\/$/, "");
+  return /^https:\/\//.test(base) ? `${base}/api/sms/twilio/status` : undefined;
 }
 
 export async function sendViaTwilio(
@@ -31,10 +34,12 @@ export async function sendViaTwilio(
   const { sid, token } = creds();
   const form = new URLSearchParams({ To: toPhone, Body: text });
 
-  if (process.env.TWILIO_MESSAGING_SERVICE_SID) {
-    form.set("MessagingServiceSid", process.env.TWILIO_MESSAGING_SERVICE_SID);
-  } else if (process.env.TWILIO_FROM_NUMBER) {
-    form.set("From", process.env.TWILIO_FROM_NUMBER);
+  const serviceSid = env("TWILIO_MESSAGING_SERVICE_SID");
+  const from = env("TWILIO_FROM_NUMBER").replace(/[^\d+]/g, "");
+  if (serviceSid) {
+    form.set("MessagingServiceSid", serviceSid);
+  } else if (from) {
+    form.set("From", from.startsWith("+") ? from : `+${from}`);
   } else {
     throw new Error("Set TWILIO_FROM_NUMBER or TWILIO_MESSAGING_SERVICE_SID");
   }
@@ -50,12 +55,15 @@ export async function sendViaTwilio(
     body: form,
   });
 
-  const json = (await res.json().catch(() => ({}))) as {
-    sid?: string; status?: string; code?: number; message?: string;
-  };
+  const rawBody = await res.text();
+  let json: { sid?: string; status?: string; code?: number; message?: string; more_info?: string } = {};
+  try { json = JSON.parse(rawBody); } catch { /* non-JSON error body */ }
 
   if (!res.ok) {
-    throw new Error(`Twilio${json.code ? ` ${json.code}` : ""}: ${json.message || `HTTP ${res.status}`}`);
+    // No PHI here: Twilio error bodies describe the request shape, not the recipient.
+    console.error("Twilio send failed", { http: res.status, code: json.code, message: json.message, more_info: json.more_info, body: rawBody.slice(0, 500) });
+    const detail = json.message || rawBody.slice(0, 200) || `HTTP ${res.status}`;
+    throw new Error(`Twilio${json.code ? ` ${json.code}` : ""}: ${detail}${json.more_info ? ` (${json.more_info})` : ""}`);
   }
 
   return { messageId: json.sid ?? "unknown", status: json.status ?? "queued" };
