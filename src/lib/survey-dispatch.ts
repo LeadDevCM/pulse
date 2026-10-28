@@ -38,10 +38,12 @@ export interface DispatchRequest {
   templateId: string;
   sentBy: string;
   sentByRole: string;
+  linkOnly?: boolean;
 }
 
 export type DispatchResult =
   | { kind: "sent"; send: SurveySend; surveyUrl: string; deliveryMode: DeliveryMode; messageId: string }
+  | { kind: "link_only"; send: SurveySend; surveyUrl: string }
   | { kind: "consent_requested"; prompted: boolean }
   | { kind: "failed"; send: SurveySend; detail: string };
 
@@ -112,6 +114,29 @@ export async function dispatchSurvey(req: DispatchRequest): Promise<DispatchResu
   };
 
   const surveyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/survey/${token}`;
+
+  if (req.linkOnly) {
+    send.status = "sent";
+    await kv.set(`send:${send.id}`, JSON.stringify(send), { ex: NINETY_DAYS });
+    await kv.set(`send:token:${token}`, JSON.stringify(send), { ex: NINETY_DAYS });
+
+    const dateKey = now.toISOString().split("T")[0];
+    await kv.sadd(`send:by-date:${dateKey}`, send.id);
+    const monthKey = now.toISOString().slice(0, 7);
+    await kv.incr(`stats:sends:${monthKey}`);
+    await kv.incr("stats:sends:all");
+
+    await logAudit({
+      action: "survey_sent",
+      userId: req.sentBy,
+      userRole: req.sentByRole,
+      resourceType: "survey",
+      resourceId: send.id,
+      metadata: { clientId, clinicianId, deliveryMode: "link_only" },
+    });
+
+    return { kind: "link_only", send, surveyUrl };
+  }
 
   try {
     const result = await sendSurveyLink(phone, surveyUrl);

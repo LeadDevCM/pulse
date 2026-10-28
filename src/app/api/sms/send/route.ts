@@ -8,7 +8,7 @@ export async function POST(request: Request) {
   const { error, session } = await requireRole(["partner", "office_manager"]);
   if (error) return error;
 
-  const { clientId, clinicianId, templateId } = await request.json();
+  const { clientId, clinicianId, templateId, linkOnly } = await request.json();
   if (!clientId || !clinicianId || !templateId) {
     return NextResponse.json({ error: "missing_fields" }, { status: 400 });
   }
@@ -38,6 +38,7 @@ export async function POST(request: Request) {
       templateId,
       sentBy: session.user.id,
       sentByRole: session.user.role,
+      linkOnly: !!linkOnly,
     });
   } catch (err: unknown) {
     const detail = err instanceof Error ? err.message : String(err);
@@ -56,5 +57,10 @@ export async function POST(request: Request) {
   }
 
   await kv.set(`send:cooldown:${clientId}`, Date.now(), { ex: COOLDOWN_HOURS * 60 * 60 });
+
+  if (result.kind === "link_only") {
+    return NextResponse.json({ success: true, sendId: result.send.id, token: result.send.token, surveyUrl: result.surveyUrl, linkOnly: true });
+  }
+
   return NextResponse.json({ success: true, sendId: result.send.id, token: result.send.token, deliveryMode: result.deliveryMode });
 }

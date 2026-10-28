@@ -6,7 +6,7 @@ import Select from "@/components/ui/Select";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { useToast } from "@/components/ui/Toast";
-import { IconSend, IconX } from "@tabler/icons-react";
+import { IconSend, IconLink, IconCheck, IconX } from "@tabler/icons-react";
 
 export default function SendTrigger() {
   const [clientId, setClientId] = useState("");
@@ -18,7 +18,10 @@ export default function SendTrigger() {
   const [clinicians, setClinicians] = useState<{ id: string; name: string }[]>([]);
   const [templates, setTemplates] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
+  const [linkLoading, setLinkLoading] = useState(false);
   const [sendResult, setSendResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
   const { addToast } = useToast();
 
   const filteredClients = clients.filter((c) =>
@@ -36,6 +39,28 @@ export default function SendTrigger() {
     if (client?.clinicianId) setClinicianId(client.clinicianId);
   }, [clientId, clients]);
 
+  const resetForm = () => {
+    setClientId("");
+    setClientSearch("");
+    setClinicianId("");
+    setGeneratedLink(null);
+    setLinkCopied(false);
+  };
+
+  const handleSendError = (data: Record<string, string>) => {
+    const messages: Record<string, string> = {
+      client_opted_out: "This client has opted out of surveys",
+      rate_limited: "This client was already sent a survey in the last 24 hours",
+      client_not_found: "Client not found",
+      missing_fields: "Missing required fields",
+    };
+    const msg = data.error === "sms_failed"
+      ? `SMS failed: ${data.detail || "unknown error"}`
+      : (messages[data.error] || "Failed to send");
+    setSendResult({ type: "error", message: msg });
+    addToast(msg, "error");
+  };
+
   const handleSend = async () => {
     if (!clientId || !templateId) return;
     if (!clinicianId) {
@@ -46,6 +71,7 @@ export default function SendTrigger() {
     if (!confirm(`Send survey to ${selectedClient?.name || "this client"}?`)) return;
 
     setSendResult(null);
+    setGeneratedLink(null);
     setLoading(true);
     const res = await fetch("/api/sms/send", {
       method: "POST",
@@ -65,24 +91,43 @@ export default function SendTrigger() {
         setSendResult({ type: "success", message: `Survey sent to ${selectedClient?.name || "client"}` });
         addToast("Survey SMS sent", "success");
       }
-      setClientId("");
-      setClientSearch("");
-      setClinicianId("");
+      resetForm();
     } else {
       const data = await res.json().catch(() => ({}));
-      const messages: Record<string, string> = {
-        client_opted_out: "This client has opted out of surveys",
-        rate_limited: "This client was already sent a survey in the last 24 hours",
-        client_not_found: "Client not found",
-        missing_fields: "Missing required fields",
-      };
-      const msg = data.error === "sms_failed"
-        ? `SMS failed: ${data.detail || "unknown error"}`
-        : (messages[data.error] || "Failed to send SMS");
-      setSendResult({ type: "error", message: msg });
-      addToast(msg, "error");
+      handleSendError(data);
     }
     setLoading(false);
+  };
+
+  const handleCopyLink = async () => {
+    if (!clientId || !templateId) return;
+    if (!clinicianId) {
+      setSendResult({ type: "error", message: "Please select a clinician" });
+      return;
+    }
+
+    setSendResult(null);
+    setGeneratedLink(null);
+    setLinkLoading(true);
+    const res = await fetch("/api/sms/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clientId, clinicianId, templateId, linkOnly: true }),
+    });
+    if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setGeneratedLink(data.surveyUrl);
+      await navigator.clipboard.writeText(data.surveyUrl);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 3000);
+      const selectedClient = clients.find((c) => c.id === clientId);
+      setSendResult({ type: "success", message: `Survey link created for ${selectedClient?.name || "client"} — copied to clipboard` });
+      addToast("Link copied to clipboard", "success");
+    } else {
+      const data = await res.json().catch(() => ({}));
+      handleSendError(data);
+    }
+    setLinkLoading(false);
   };
 
   return (
@@ -155,9 +200,37 @@ export default function SendTrigger() {
             ...templates.map((t) => ({ value: t.id, label: t.name })),
           ]}
         />
-        <Button onClick={handleSend} loading={loading} disabled={!clientId || !templateId}>
-          <IconSend size={16} className="mr-2" /> Send Survey
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleSend} loading={loading} disabled={!clientId || !templateId}>
+            <IconSend size={16} className="mr-2" /> Send SMS
+          </Button>
+          <Button onClick={handleCopyLink} loading={linkLoading} disabled={!clientId || !templateId} variant="secondary">
+            {linkCopied ? <IconCheck size={16} className="mr-2" /> : <IconLink size={16} className="mr-2" />}
+            {linkCopied ? "Copied!" : "Copy Link"}
+          </Button>
+        </div>
+        {generatedLink && (
+          <div className="flex items-center gap-2 px-3 py-2 bg-bg-alt border border-border rounded-lg">
+            <input
+              type="text"
+              readOnly
+              value={generatedLink}
+              className="flex-1 bg-transparent text-sm text-text truncate outline-none"
+              onFocus={(e) => e.target.select()}
+            />
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(generatedLink);
+                setLinkCopied(true);
+                setTimeout(() => setLinkCopied(false), 3000);
+                addToast("Copied!", "success");
+              }}
+              className="shrink-0 px-2 py-1 text-xs font-medium text-primary hover:text-primary-dark transition-colors"
+            >
+              {linkCopied ? "Copied!" : "Copy"}
+            </button>
+          </div>
+        )}
       </div>
     </Card>
   );
