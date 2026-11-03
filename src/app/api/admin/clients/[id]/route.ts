@@ -50,6 +50,30 @@ export async function PUT(
   if (updates.clinicianId !== undefined) {
     client.clinicianId = updates.clinicianId === "" ? undefined : updates.clinicianId;
   }
+  if (updates.status !== undefined) {
+    client.status = updates.status;
+    if (updates.status === 'terminated') {
+      client.terminatedAt = client.terminatedAt || new Date().toISOString();
+    } else {
+      client.terminatedAt = undefined;
+      client.terminationReason = undefined;
+    }
+  }
+  if (updates.frequency !== undefined) {
+    client.frequency = updates.frequency === "" ? undefined : updates.frequency;
+  }
+  if (updates.startDate !== undefined) {
+    client.startDate = updates.startDate === "" ? undefined : updates.startDate;
+  }
+  if (updates.lastApptDate !== undefined) {
+    client.lastApptDate = updates.lastApptDate === "" ? undefined : updates.lastApptDate;
+  }
+  if (updates.terminationReason !== undefined) {
+    client.terminationReason = updates.terminationReason === "" ? undefined : updates.terminationReason;
+  }
+  if (updates.notes !== undefined) {
+    client.notes = updates.notes === "" ? undefined : encrypt(updates.notes);
+  }
 
   await kv.set(`client:${id}`, JSON.stringify(client));
 
@@ -73,6 +97,7 @@ export async function PUT(
       name: `${firstName} ${lastName}`.trim(),
       email: client.email ? decrypt(client.email) : undefined,
       phone: decrypt(client.phone),
+      notes: client.notes ? decrypt(client.notes) : undefined,
     },
   });
 }

@@ -9,7 +9,7 @@ const kv = new Redis({
 });
 
 async function main() {
-  const email = "michelle@mendingmindstherapy.com";
+  const email = "michelle@mendingmindsutah.com";
 
   const existing = await kv.get<string>(`user:email:${email}`);
   if (existing) {

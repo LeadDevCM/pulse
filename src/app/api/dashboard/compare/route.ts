@@ -5,7 +5,7 @@ import { decrypt } from "@/lib/encryption";
 import type { Clinician, SurveyTemplate } from "@/types";
 
 export async function GET(request: Request) {
-  const { error } = await requireRole(["partner"]);
+  const { error } = await requireRole(["partner", "office_manager"]);
   if (error) return error;
 
   const url = new URL(request.url);

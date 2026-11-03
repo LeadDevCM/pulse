@@ -6,16 +6,16 @@ const kv = new Redis({
 });
 
 const KEEP_EMAILS = new Set([
-  "kendra@mendingmindstherapy.com",
-  "chelsee@mendingmindstherapy.com",
-  "ashley@mendingmindstherapy.com",
-  "shandra@mendingmindstherapy.com",
-  "keri@mendingmindstherapy.com",
-  "kelsi@mendingmindstherapy.com",
-  "dennie@mendingmindstherapy.com",
-  "brooklyn@mendingmindstherapy.com",
-  "travis@mendingmindstherapy.com",
-  "michelle@mendingmindstherapy.com",
+  "kendra@mendingmindsutah.com",
+  "chelsee@mendingmindsutah.com",
+  "ashley@mendingmindsutah.com",
+  "shandra@mendingmindsutah.com",
+  "keri@mendingmindsutah.com",
+  "kelsi@mendingmindsutah.com",
+  "dennie@mendingmindsutah.com",
+  "brooklyn@mendingmindsutah.com",
+  "travis@mendingmindsutah.com",
+  "michelle@mendingmindsutah.com",
   "ghost@cedarcitywebdesign.com",
 ]);
 

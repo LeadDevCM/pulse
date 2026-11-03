@@ -27,6 +27,7 @@ export async function GET(request: Request) {
       name: `${firstName} ${lastName}`.trim(),
       email: client.email ? decrypt(client.email) : undefined,
       phone: decrypt(client.phone),
+      notes: client.notes ? decrypt(client.notes) : undefined,
     });
   }
 
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
   const { error, session } = await requireRole(["partner", "office_manager"]);
   if (error) return error;
 
-  const { firstName, lastName, phone, email, clinicianId } = await request.json();
+  const { firstName, lastName, phone, email, clinicianId, status, frequency, startDate, notes } = await request.json();
   if (!firstName || !lastName || !phone) {
     return NextResponse.json({ error: "missing_fields" }, { status: 400 });
   }
@@ -65,6 +66,10 @@ export async function POST(request: Request) {
     clinicianId: clinicianId || undefined,
     optedInAt: new Date().toISOString(),
     active: true,
+    status: status || 'active',
+    frequency: frequency || undefined,
+    startDate: startDate || undefined,
+    notes: notes ? encrypt(notes) : undefined,
   };
 
   await kv.set(`client:${id}`, JSON.stringify(client));

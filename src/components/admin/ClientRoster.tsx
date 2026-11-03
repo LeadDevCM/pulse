@@ -22,6 +22,13 @@ interface ClientItem {
   optedInAt: string;
   optedOut?: boolean;
   smsConsent?: "pending" | "confirmed";
+  // Retention fields
+  status?: "active" | "inactive" | "terminated";
+  frequency?: string;
+  startDate?: string;
+  lastApptDate?: string;
+  terminationReason?: string;
+  notes?: string;
 }
 
 interface CsvParsedClient {
@@ -89,10 +96,17 @@ export default function ClientRoster() {
   const [editEmail, setEditEmail] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editClinicianId, setEditClinicianId] = useState("");
+  const [editStatus, setEditStatus] = useState<string>("active");
+  const [editFrequency, setEditFrequency] = useState("");
+  const [editStartDate, setEditStartDate] = useState("");
+  const [editLastApptDate, setEditLastApptDate] = useState("");
+  const [editTerminationReason, setEditTerminationReason] = useState("");
+  const [editNotes, setEditNotes] = useState("");
   const [editClinicians, setEditClinicians] = useState<{ id: string; name: string }[]>([]);
   const [editSaving, setEditSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [clinicianFilter, setClinicianFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [clinicians, setClinicians] = useState<{ id: string; name: string }[]>([]);
   const [visiblePhiIds, setVisiblePhiIds] = useState<Set<string>>(new Set());
   const { addToast } = useToast();
@@ -109,6 +123,10 @@ export default function ClientRoster() {
 
   const filteredClients = clients.filter((c) => {
     if (clinicianFilter && c.clinicianId !== clinicianFilter) return false;
+    if (statusFilter) {
+      const clientStatus = c.status || "active";
+      if (clientStatus !== statusFilter) return false;
+    }
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     return c.name.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q) || c.phone.includes(q);
@@ -180,6 +198,12 @@ export default function ClientRoster() {
     setEditEmail(client.email || "");
     setEditPhone(client.phone);
     setEditClinicianId(client.clinicianId);
+    setEditStatus(client.status || "active");
+    setEditFrequency(client.frequency || "");
+    setEditStartDate(client.startDate || "");
+    setEditLastApptDate(client.lastApptDate || "");
+    setEditTerminationReason(client.terminationReason || "");
+    setEditNotes(client.notes || "");
     fetch("/api/admin/clinicians")
       .then((r) => r.json())
       .then((data) => setEditClinicians(data.clinicians || []))
@@ -193,6 +217,12 @@ export default function ClientRoster() {
     setEditEmail("");
     setEditPhone("");
     setEditClinicianId("");
+    setEditStatus("active");
+    setEditFrequency("");
+    setEditStartDate("");
+    setEditLastApptDate("");
+    setEditTerminationReason("");
+    setEditNotes("");
   };
 
   const saveEdit = async (e: React.FormEvent) => {
@@ -209,6 +239,12 @@ export default function ClientRoster() {
           email: editEmail || undefined,
           phone: editPhone,
           clinicianId: editClinicianId,
+          status: editStatus,
+          frequency: editFrequency || undefined,
+          startDate: editStartDate || undefined,
+          lastApptDate: editLastApptDate || undefined,
+          terminationReason: editStatus === "terminated" ? editTerminationReason : undefined,
+          notes: editNotes || undefined,
         }),
       });
       if (res.ok) {
@@ -378,6 +414,16 @@ export default function ClientRoster() {
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-1.5 rounded-lg border border-border bg-white text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+          >
+            <option value="">All Statuses</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="terminated">Terminated</option>
+          </select>
         </div>
         <div className="flex gap-2">
           <Button onClick={purgeAllClients} size="sm" variant="danger" loading={purging} disabled={clients.length === 0}>
@@ -422,12 +468,21 @@ export default function ClientRoster() {
       {loading ? (
         <div className="text-center py-8 text-text-secondary">Loading...</div>
       ) : (
-        <Table headers={["First Name", "Last Name", "Clinician", "Email", "Phone", "Opted In", ""]}>
+        <Table headers={["First Name", "Last Name", "Clinician", "Status", "Email", "Phone", "Opted In", ""]}>
           {filteredClients.map((c) => (
             <tr key={c.id} className="hover:bg-bg-alt">
               <td className="px-4 py-3 text-sm font-medium text-text">{c.firstName}</td>
               <td className="px-4 py-3 text-sm font-medium text-text">{c.lastName}</td>
               <td className="px-4 py-3 text-sm text-text-secondary">{clinicianMap[c.clinicianId] || "—"}</td>
+              <td className="px-4 py-3">
+                {c.status === "terminated" ? (
+                  <Badge variant="error">Terminated</Badge>
+                ) : c.status === "inactive" ? (
+                  <Badge variant="warning">Inactive</Badge>
+                ) : (
+                  <Badge variant="success">Active</Badge>
+                )}
+              </td>
               <td className="px-4 py-3 text-sm text-text-secondary">{visiblePhiIds.has(c.id) ? (c.email || "—") : (c.email ? "••••@••••" : "—")}</td>
               <td className="px-4 py-3 text-sm text-text-secondary">{visiblePhiIds.has(c.id) ? c.phone : "••••••••••"}</td>
               <td className="px-4 py-3">
@@ -641,6 +696,60 @@ export default function ClientRoster() {
               ...editClinicians.map((c) => ({ value: c.id, label: c.name })),
             ]}
           />
+          <Select
+            label="Status"
+            value={editStatus}
+            onChange={(e) => setEditStatus(e.target.value)}
+            options={[
+              { value: "active", label: "Active" },
+              { value: "inactive", label: "Inactive" },
+              { value: "terminated", label: "Terminated" },
+            ]}
+          />
+          <Select
+            label="Session Frequency"
+            value={editFrequency}
+            onChange={(e) => setEditFrequency(e.target.value)}
+            options={[
+              { value: "", label: "Select frequency..." },
+              { value: "weekly", label: "Weekly" },
+              { value: "every_other_week", label: "Every Other Week" },
+              { value: "monthly", label: "Monthly" },
+              { value: "as_needed", label: "As Needed" },
+              { value: "never_seen", label: "Never Seen" },
+            ]}
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <Input label="Start Date" type="date" value={editStartDate} onChange={(e) => setEditStartDate(e.target.value)} />
+            <Input label="Last Appt Date" type="date" value={editLastApptDate} onChange={(e) => setEditLastApptDate(e.target.value)} />
+          </div>
+          {editStatus === "terminated" && (
+            <Select
+              label="Termination Reason"
+              value={editTerminationReason}
+              onChange={(e) => setEditTerminationReason(e.target.value)}
+              options={[
+                { value: "", label: "Select reason..." },
+                { value: "Client achieved goals", label: "Client achieved goals" },
+                { value: "Client-no communication", label: "Client-no communication" },
+                { value: "Client requested", label: "Client requested" },
+                { value: "Referred out", label: "Referred out" },
+                { value: "Insurance/financial", label: "Insurance/financial" },
+                { value: "Clinician recommendation", label: "Clinician recommendation" },
+                { value: "Other", label: "Other" },
+              ]}
+            />
+          )}
+          <div className="space-y-1">
+            <label htmlFor="edit-notes" className="block text-sm font-medium text-text">Notes</label>
+            <textarea
+              id="edit-notes"
+              value={editNotes}
+              onChange={(e) => setEditNotes(e.target.value)}
+              rows={3}
+              className="w-full px-3 py-2 rounded-lg border border-border bg-white text-text focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors text-sm"
+            />
+          </div>
           <div className="flex gap-2 justify-end">
             <Button variant="ghost" size="sm" onClick={closeEdit} type="button">Cancel</Button>
             <Button type="submit" size="sm" loading={editSaving}>Save Changes</Button>

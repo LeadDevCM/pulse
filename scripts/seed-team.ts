@@ -17,16 +17,16 @@ interface TeamMember {
 }
 
 const team: TeamMember[] = [
-  { name: "Kendra Jones",       email: "kendra@mendingmindstherapy.com",   role: "partner",         isClinician: true },
-  { name: "Chelsee Jackson",    email: "chelsee@mendingmindstherapy.com",  role: "partner",         isClinician: true },
-  { name: "Ashley Barton",      email: "ashley@mendingmindstherapy.com",   role: "clinician",       isClinician: true },
-  { name: "Shandra Powell",     email: "shandra@mendingmindstherapy.com",  role: "clinician",       isClinician: true },
-  { name: "Keri Carter",        email: "keri@mendingmindstherapy.com",     role: "clinician",       isClinician: true },
-  { name: "Kelsi Russell",      email: "kelsi@mendingmindstherapy.com",    role: "clinician",       isClinician: true },
-  { name: "Dennie Asbury",      email: "dennie@mendingmindstherapy.com",   role: "clinician",       isClinician: true },
-  { name: "Brooklyn Blanchard", email: "brooklyn@mendingmindstherapy.com", role: "clinician",       isClinician: true },
-  { name: "Travis Eide",        email: "travis@mendingmindstherapy.com",   role: "clinician",       isClinician: true },
-  { name: "Michelle Smock",     email: "michelle@mendingmindstherapy.com", role: "office_manager",  isClinician: false },
+  { name: "Kendra Jones",       email: "kendra@mendingmindsutah.com",   role: "partner",         isClinician: true },
+  { name: "Chelsee Jackson",    email: "chelsee@mendingmindsutah.com",  role: "partner",         isClinician: true },
+  { name: "Ashley Barton",      email: "ashley@mendingmindsutah.com",   role: "clinician",       isClinician: true },
+  { name: "Shandra Powell",     email: "shandra@mendingmindsutah.com",  role: "clinician",       isClinician: true },
+  { name: "Keri Carter",        email: "keri@mendingmindsutah.com",     role: "clinician",       isClinician: true },
+  { name: "Kelsi Russell",      email: "kelsi@mendingmindsutah.com",    role: "clinician",       isClinician: true },
+  { name: "Dennie Asbury",      email: "dennie@mendingmindsutah.com",   role: "clinician",       isClinician: true },
+  { name: "Brooklyn Blanchard", email: "brooklyn@mendingmindsutah.com", role: "clinician",       isClinician: true },
+  { name: "Travis Eide",        email: "travis@mendingmindsutah.com",   role: "clinician",       isClinician: true },
+  { name: "Michelle Smock",     email: "michelle@mendingmindsutah.com", role: "office_manager",  isClinician: false },
 ];
 
 async function main() {

@@ -3,9 +3,11 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 const routeRoles: [string, string[]][] = [
-  ["/dashboard/compare", ["partner"]],
+  ["/dashboard/compare", ["partner", "office_manager"]],
+  ["/dashboard/reports", ["partner", "office_manager"]],
   ["/dashboard/responses", ["partner", "clinician", "office_manager"]],
-  ["/dashboard/trends", ["partner", "clinician"]],
+  ["/dashboard/trends", ["partner", "clinician", "office_manager"]],
+  ["/admin/retention", ["partner", "office_manager"]],
   ["/admin/audit", ["partner"]],
   ["/admin/clients", ["partner", "office_manager"]],
   ["/admin/schedule", ["partner", "office_manager"]],

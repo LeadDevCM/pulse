@@ -16,6 +16,27 @@ export interface Clinician {
   active: boolean;
 }
 
+export type ClientStatus = 'active' | 'inactive' | 'terminated';
+export type SessionFrequency = 'weekly' | 'every_other_week' | 'monthly' | 'as_needed' | 'never_seen';
+
+export const TERMINATION_REASONS = [
+  'Client achieved goals',
+  'Client-no communication',
+  'Client requested',
+  'Referred out',
+  'Insurance/financial',
+  'Clinician recommendation',
+  'Other',
+] as const;
+
+export const SESSION_FREQUENCY_LABELS: Record<SessionFrequency, string> = {
+  weekly: 'Weekly',
+  every_other_week: 'Every Other Week',
+  monthly: 'Monthly',
+  as_needed: 'As Needed',
+  never_seen: 'Never Seen',
+};
+
 export interface Client {
   id: string;
   firstName: string;  // ENCRYPTED in storage
@@ -31,6 +52,14 @@ export interface Client {
   smsConsentRequestedAt?: string;
   smsConsentConfirmedAt?: string;
   active: boolean;
+  // Retention tracking
+  status?: ClientStatus;
+  frequency?: SessionFrequency;
+  startDate?: string;
+  lastApptDate?: string;
+  terminatedAt?: string;
+  terminationReason?: string;
+  notes?: string;  // ENCRYPTED in storage
 }
 
 export interface SurveyTemplate {
@@ -123,7 +152,9 @@ export type AuditAction =
   | 'client_opted_in'
   | 'sms_consent_requested'
   | 'sms_consent_confirmed'
-  | 'client_updated';
+  | 'client_updated'
+  | 'retention_updated'
+  | 'report_viewed';
 
 export interface AuditEntry {
   id: string;

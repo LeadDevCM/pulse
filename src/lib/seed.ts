@@ -32,7 +32,7 @@ export async function seedDatabase() {
     {
       id: uuidv4(),
       name: "Kendra Jones",
-      email: "kendra@mendingmindstherapy.com",
+      email: "kendra@mendingmindsutah.com",
       passwordHash: defaultPassword,
       role: "partner",
       clinicianId: clinicianByName["Kendra Jones"],
@@ -43,7 +43,7 @@ export async function seedDatabase() {
     {
       id: uuidv4(),
       name: "Chelsee Jackson",
-      email: "chelsee@mendingmindstherapy.com",
+      email: "chelsee@mendingmindsutah.com",
       passwordHash: defaultPassword,
       role: "partner",
       clinicianId: clinicianByName["Chelsee Jackson"],
@@ -54,7 +54,7 @@ export async function seedDatabase() {
     {
       id: uuidv4(),
       name: "Ashley Barton",
-      email: "ashley@mendingmindstherapy.com",
+      email: "ashley@mendingmindsutah.com",
       passwordHash: defaultPassword,
       role: "clinician",
       clinicianId: clinicianByName["Ashley Barton"],
@@ -65,7 +65,7 @@ export async function seedDatabase() {
     {
       id: uuidv4(),
       name: "Shandra Powell",
-      email: "shandra@mendingmindstherapy.com",
+      email: "shandra@mendingmindsutah.com",
       passwordHash: defaultPassword,
       role: "clinician",
       clinicianId: clinicianByName["Shandra Powell"],
@@ -76,7 +76,7 @@ export async function seedDatabase() {
     {
       id: uuidv4(),
       name: "Keri Carter",
-      email: "keri@mendingmindstherapy.com",
+      email: "keri@mendingmindsutah.com",
       passwordHash: defaultPassword,
       role: "clinician",
       clinicianId: clinicianByName["Keri Carter"],
@@ -87,7 +87,7 @@ export async function seedDatabase() {
     {
       id: uuidv4(),
       name: "Kelsi Russell",
-      email: "kelsi@mendingmindstherapy.com",
+      email: "kelsi@mendingmindsutah.com",
       passwordHash: defaultPassword,
       role: "clinician",
       clinicianId: clinicianByName["Kelsi Russell"],
@@ -98,7 +98,7 @@ export async function seedDatabase() {
     {
       id: uuidv4(),
       name: "Dennie Asbury",
-      email: "dennie@mendingmindstherapy.com",
+      email: "dennie@mendingmindsutah.com",
       passwordHash: defaultPassword,
       role: "clinician",
       clinicianId: clinicianByName["Dennie Asbury"],
@@ -109,7 +109,7 @@ export async function seedDatabase() {
     {
       id: uuidv4(),
       name: "Brooklyn Blanchard",
-      email: "brooklyn@mendingmindstherapy.com",
+      email: "brooklyn@mendingmindsutah.com",
       passwordHash: defaultPassword,
       role: "clinician",
       clinicianId: clinicianByName["Brooklyn Blanchard"],
@@ -120,7 +120,7 @@ export async function seedDatabase() {
     {
       id: uuidv4(),
       name: "Travis Eide",
-      email: "travis@mendingmindstherapy.com",
+      email: "travis@mendingmindsutah.com",
       passwordHash: defaultPassword,
       role: "clinician",
       clinicianId: clinicianByName["Travis Eide"],
@@ -131,7 +131,7 @@ export async function seedDatabase() {
     {
       id: uuidv4(),
       name: "Michelle Smock",
-      email: "michelle@mendingmindstherapy.com",
+      email: "michelle@mendingmindsutah.com",
       passwordHash: defaultPassword,
       role: "office_manager",
       active: true,

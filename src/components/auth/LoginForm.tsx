@@ -49,7 +49,7 @@ export default function LoginForm() {
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@mendingmindstherapy.com"
+          placeholder="you@mendingmindsutah.com"
           required
         />
         <Input

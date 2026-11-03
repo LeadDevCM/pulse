@@ -10,9 +10,12 @@ interface ImportRow {
   firstName: string;
   lastName: string;
   email?: string;
-  phone: string;
+  phone?: string;
   clinicianName?: string;
   clinicianId?: string;
+  status?: string;
+  frequency?: string;
+  startDate?: string;
 }
 
 async function buildClinicianNameMap(): Promise<Record<string, string>> {
@@ -45,26 +48,27 @@ export async function POST(request: Request) {
   const errors: string[] = [];
 
   for (const row of clients) {
-    if (!row.firstName || !row.lastName || !row.phone) {
+    if (!row.firstName || !row.lastName) {
       skipped++;
-      errors.push(`Skipped: missing name or phone for "${row.firstName || ""} ${row.lastName || ""}"`);
+      errors.push(`Skipped: missing name for "${row.firstName || ""} ${row.lastName || ""}"`);
       continue;
     }
 
-    const phone = normalizePhone(row.phone);
-    if (!phone) {
-      skipped++;
-      errors.push(`Skipped: invalid phone "${row.phone}" for "${row.firstName} ${row.lastName}"`);
-      continue;
+    let phone: string | undefined;
+    if (row.phone) {
+      const normalized = normalizePhone(row.phone);
+      if (normalized) {
+        phone = normalized;
+      } else {
+        errors.push(`Warning: invalid phone "${row.phone}" for "${row.firstName} ${row.lastName}" — imported without phone`);
+      }
     }
 
     let clinicianId = row.clinicianId;
     if (!clinicianId && row.clinicianName) {
       clinicianId = clinicianNameMap[row.clinicianName.toLowerCase()];
       if (!clinicianId) {
-        skipped++;
-        errors.push(`Skipped: unknown clinician "${row.clinicianName}" for "${row.firstName} ${row.lastName}"`);
-        continue;
+        errors.push(`Warning: unknown clinician "${row.clinicianName}" for "${row.firstName} ${row.lastName}" — imported without clinician`);
       }
     }
 
@@ -74,15 +78,18 @@ export async function POST(request: Request) {
       firstName: encrypt(row.firstName),
       lastName: encrypt(row.lastName),
       email: row.email ? encrypt(row.email) : undefined,
-      phone: encrypt(phone),
+      phone: phone ? encrypt(phone) : encrypt(""),
       clinicianId: clinicianId || undefined,
       optedInAt: new Date().toISOString(),
       active: true,
+      status: (row.status as Client["status"]) || "active",
+      frequency: (row.frequency as Client["frequency"]) || undefined,
+      startDate: row.startDate || undefined,
     };
 
     await kv.set(`client:${id}`, JSON.stringify(client));
     await kv.sadd("client:index", id);
-    await kv.set(phoneIndexKey(phone), id);
+    if (phone) await kv.set(phoneIndexKey(phone), id);
     imported++;
   }
 
