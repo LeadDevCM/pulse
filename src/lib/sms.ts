@@ -20,7 +20,7 @@ export function getDeliveryMode(): DeliveryMode {
 }
 
 export const SURVEY_SMS_TEXT = (surveyUrl: string) =>
-  `Mending Minds values your feedback. Please take a moment to share your experience: ${surveyUrl} Reply STOP to opt out.`;
+  `Hi! Thank you for trusting us with your care. We'd love to hear how your session went — your honest feedback helps us take better care of you: ${surveyUrl} Reply STOP to opt out.`;
 
 export interface SendResult {
   /** Provider message id, used to correlate status webhooks. */

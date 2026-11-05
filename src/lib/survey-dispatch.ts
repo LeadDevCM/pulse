@@ -20,7 +20,7 @@ const PENDING_TTL = 14 * 24 * 60 * 60;
 const PROMPT_COOLDOWN = 24 * 60 * 60;
 
 export const CONSENT_PROMPT_TEXT =
-  "Mending Minds would like to send you a short feedback request by text after your sessions. Reply YES to accept or STOP to decline.";
+  "Hi! This is Mending Minds Therapy. We'd love to check in with a quick text after your sessions to make sure you're getting the best care possible. Reply YES to opt in or STOP to decline.";
 
 export function doubleOptInEnabled(): boolean {
   return process.env.SMS_DOUBLE_OPT_IN === "true";
