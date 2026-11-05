@@ -5,7 +5,8 @@ import Table from "@/components/ui/Table";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
-import { IconChevronRight } from "@tabler/icons-react";
+import { IconChevronRight, IconTrash } from "@tabler/icons-react";
+import { useToast } from "@/components/ui/Toast";
 import type { SurveyQuestion } from "@/types";
 
 interface ResponseItem {
@@ -34,6 +35,8 @@ export default function ResponseList({ clinicianId }: ResponseListProps) {
   const [selected, setSelected] = useState<ResponseItem | null>(null);
   const [questions, setQuestions] = useState<Record<string, SurveyQuestion[]>>({});
   const [clinicians, setClinicians] = useState<Record<string, string>>({});
+  const [deleting, setDeleting] = useState(false);
+  const { addToast } = useToast();
 
   useEffect(() => {
     fetch("/api/admin/clinicians")
@@ -102,6 +105,24 @@ export default function ResponseList({ clinicianId }: ResponseListProps) {
     if (ratings.length === 0) return null;
     const avg = ratings.reduce((s, a) => s + (a.value as number), 0) / ratings.length;
     return Math.round(avg * 10) / 10;
+  };
+
+  const deleteResponse = async (token: string) => {
+    if (!confirm("Permanently delete this response? This cannot be undone.")) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/dashboard/responses/${token}`, { method: "DELETE" });
+      if (res.ok) {
+        setResponses((prev) => prev.filter((r) => r.token !== token));
+        setSelected(null);
+        addToast("Response deleted", "success");
+      } else {
+        addToast("Failed to delete response", "error");
+      }
+    } catch {
+      addToast("Network error", "error");
+    }
+    setDeleting(false);
   };
 
   if (loading) {
@@ -253,6 +274,18 @@ export default function ResponseList({ clinicianId }: ResponseListProps) {
                 );
               })}
             </div>
+
+            {selected.token && (
+              <div className="border-t border-border pt-4 flex justify-end">
+                <button
+                  onClick={() => deleteResponse(selected.token!)}
+                  disabled={deleting}
+                  className="flex items-center gap-1 text-xs text-error hover:text-red-700 transition-colors disabled:opacity-50"
+                >
+                  <IconTrash size={14} /> {deleting ? "Deleting..." : "Delete Response"}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </Modal>
