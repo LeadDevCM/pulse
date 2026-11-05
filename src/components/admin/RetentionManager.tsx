@@ -17,6 +17,9 @@ import {
   IconUpload,
   IconTrash,
   IconTrashX,
+  IconArrowUp,
+  IconArrowDown,
+  IconArrowsSort,
 } from "@tabler/icons-react";
 import { useToast } from "@/components/ui/Toast";
 
@@ -58,6 +61,8 @@ interface CsvParsedClient {
 
 type SavingState = "idle" | "saving" | "saved";
 type ImportStep = "upload" | "preview" | "importing" | "results";
+type SortKey = "name" | "smsApproved" | "clinician" | "status" | "frequency" | "startDate" | "lastApptDate" | "terminationReason";
+type SortDir = "asc" | "desc";
 
 const STATUS_OPTIONS = [
   { value: "active", label: "Active" },
@@ -126,6 +131,8 @@ export default function RetentionManager() {
   const [searchQuery, setSearchQuery] = useState("");
   const [savingRows, setSavingRows] = useState<Record<string, SavingState>>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>("name");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [purging, setPurging] = useState(false);
@@ -165,6 +172,33 @@ export default function RetentionManager() {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     return c.name.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q) || c.phone?.includes(q);
+  });
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(key); setSortDir("asc"); }
+  };
+
+  const SortIcon = ({ col }: { col: SortKey }) => {
+    if (sortKey !== col) return <IconArrowsSort size={13} className="inline ml-0.5 opacity-0 group-hover/th:opacity-40" />;
+    return sortDir === "asc"
+      ? <IconArrowUp size={13} className="inline ml-0.5 text-primary" />
+      : <IconArrowDown size={13} className="inline ml-0.5 text-primary" />;
+  };
+
+  const sorted = [...filtered].sort((a, b) => {
+    const dir = sortDir === "asc" ? 1 : -1;
+    switch (sortKey) {
+      case "name": return dir * a.name.localeCompare(b.name);
+      case "smsApproved": return dir * (Number(a.smsApproved ?? 0) - Number(b.smsApproved ?? 0));
+      case "clinician": return dir * (clinicianMap[a.clinicianId] || "").localeCompare(clinicianMap[b.clinicianId] || "");
+      case "status": return dir * (a.status || "active").localeCompare(b.status || "active");
+      case "frequency": return dir * (a.frequency || "").localeCompare(b.frequency || "");
+      case "startDate": return dir * (a.startDate || "").localeCompare(b.startDate || "");
+      case "lastApptDate": return dir * (a.lastApptDate || "").localeCompare(b.lastApptDate || "");
+      case "terminationReason": return dir * (a.terminationReason || "").localeCompare(b.terminationReason || "");
+      default: return 0;
+    }
   });
 
   const counts = filtered.reduce(
@@ -434,19 +468,19 @@ export default function RetentionManager() {
             <thead>
               <tr className="border-b border-border bg-bg-alt">
                 <th className="px-2 py-2.5" />
-                <th className="text-left px-3 py-2.5 font-medium text-text-secondary whitespace-nowrap">Client</th>
-                <th className="text-center px-1 py-2.5 font-medium text-text-secondary whitespace-nowrap" title="Approved for SMS">SMS</th>
-                {!clinicianFilter && <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap">Clinician</th>}
-                <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap">Status</th>
-                <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap">Frequency</th>
-                <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap">Start Date</th>
-                <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap">Last Appt</th>
-                <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap">Term. Reason</th>
+                <th className="text-left px-3 py-2.5 font-medium text-text-secondary whitespace-nowrap cursor-pointer select-none group/th" onClick={() => toggleSort("name")}>Client<SortIcon col="name" /></th>
+                <th className="text-center px-1 py-2.5 font-medium text-text-secondary whitespace-nowrap cursor-pointer select-none group/th" title="Approved for SMS" onClick={() => toggleSort("smsApproved")}>SMS<SortIcon col="smsApproved" /></th>
+                {!clinicianFilter && <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap cursor-pointer select-none group/th" onClick={() => toggleSort("clinician")}>Clinician<SortIcon col="clinician" /></th>}
+                <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap cursor-pointer select-none group/th" onClick={() => toggleSort("status")}>Status<SortIcon col="status" /></th>
+                <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap cursor-pointer select-none group/th" onClick={() => toggleSort("frequency")}>Frequency<SortIcon col="frequency" /></th>
+                <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap cursor-pointer select-none group/th" onClick={() => toggleSort("startDate")}>Start Date<SortIcon col="startDate" /></th>
+                <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap cursor-pointer select-none group/th" onClick={() => toggleSort("lastApptDate")}>Last Appt<SortIcon col="lastApptDate" /></th>
+                <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap cursor-pointer select-none group/th" onClick={() => toggleSort("terminationReason")}>Term. Reason<SortIcon col="terminationReason" /></th>
                 <th className="px-2 py-2.5" />
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {filtered.map((c) => {
+              {sorted.map((c) => {
                 const status = c.status || "active";
                 const saving = savingRows[c.id] || "idle";
                 const isExpanded = expandedId === c.id;
