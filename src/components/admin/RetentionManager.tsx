@@ -31,6 +31,7 @@ interface ClientItem {
   optedInAt: string;
   optedOut?: boolean;
   smsConsent?: "pending" | "confirmed";
+  smsApproved?: boolean;
   status?: string;
   frequency?: string;
   startDate?: string;
@@ -422,6 +423,7 @@ export default function RetentionManager() {
               <tr className="border-b border-border bg-bg-alt">
                 <th className="w-8 px-2 py-2.5" />
                 <th className="text-left px-3 py-2.5 font-medium text-text-secondary whitespace-nowrap">Client</th>
+                <th className="text-center px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap" title="Approved for SMS">SMS</th>
                 {!clinicianFilter && <th className="text-left px-3 py-2.5 font-medium text-text-secondary whitespace-nowrap">Clinician</th>}
                 <th className="text-left px-3 py-2.5 font-medium text-text-secondary whitespace-nowrap">Status</th>
                 <th className="text-left px-3 py-2.5 font-medium text-text-secondary whitespace-nowrap">Frequency</th>
@@ -438,7 +440,7 @@ export default function RetentionManager() {
                 const isExpanded = expandedId === c.id;
                 return (
                   <tr key={c.id} className="group">
-                    <td colSpan={clinicianFilter ? 8 : 9} className="p-0">
+                    <td colSpan={clinicianFilter ? 9 : 10} className="p-0">
                       {/* Main row */}
                       <div className="flex items-center hover:bg-bg-alt/50 transition-colors">
                         <div className="w-8 px-2 py-2 flex-shrink-0">
@@ -452,6 +454,19 @@ export default function RetentionManager() {
                         <div className="px-3 py-2 font-medium text-text whitespace-nowrap min-w-[140px]">
                           <button onClick={() => setExpandedId(isExpanded ? null : c.id)} className="text-left hover:text-primary transition-colors">
                             {c.name}
+                          </button>
+                        </div>
+                        <div className="px-2 py-1 text-center w-12 flex-shrink-0">
+                          <button
+                            onClick={() => {
+                              const next = !c.smsApproved;
+                              setClients((prev) => prev.map((cl) => (cl.id === c.id ? { ...cl, smsApproved: next } : cl)));
+                              saveField(c.id, { smsApproved: String(next) });
+                            }}
+                            className={`inline-flex items-center justify-center w-6 h-6 rounded border transition-colors ${c.smsApproved ? "bg-green-100 border-green-400 text-green-700" : "bg-surface border-border text-text-secondary/30 hover:border-border-dark"}`}
+                            title={c.smsApproved ? "SMS approved — click to revoke" : "Not approved for SMS — click to approve"}
+                          >
+                            {c.smsApproved && <IconCheck size={14} />}
                           </button>
                         </div>
                         {!clinicianFilter && (

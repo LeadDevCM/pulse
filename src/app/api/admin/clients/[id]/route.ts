@@ -74,6 +74,9 @@ export async function PUT(
   if (updates.notes !== undefined) {
     client.notes = updates.notes === "" ? undefined : encrypt(updates.notes);
   }
+  if (updates.smsApproved !== undefined) {
+    client.smsApproved = updates.smsApproved === true || updates.smsApproved === "true";
+  }
 
   await kv.set(`client:${id}`, JSON.stringify(client));
 

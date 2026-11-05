@@ -23,6 +23,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "client_opted_out" }, { status: 422 });
   }
 
+  if (!client.smsApproved) {
+    return NextResponse.json({ error: "sms_not_approved" }, { status: 422 });
+  }
+
   const COOLDOWN_HOURS = 24;
   const lastSendTime = await kv.get<number>(`send:cooldown:${clientId}`);
   if (lastSendTime && Date.now() - lastSendTime < COOLDOWN_HOURS * 60 * 60 * 1000) {

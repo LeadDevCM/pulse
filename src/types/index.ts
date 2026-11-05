@@ -52,6 +52,8 @@ export interface Client {
   smsConsentRequestedAt?: string;
   smsConsentConfirmedAt?: string;
   active: boolean;
+  /** Office confirmed this client has given permission to receive SMS. */
+  smsApproved?: boolean;
   // Retention tracking
   status?: ClientStatus;
   frequency?: SessionFrequency;
