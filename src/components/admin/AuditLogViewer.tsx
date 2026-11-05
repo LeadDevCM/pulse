@@ -13,6 +13,7 @@ export default function AuditLogViewer() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [startDate, setStartDate] = useState(
     new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
   );
@@ -20,26 +21,26 @@ export default function AuditLogViewer() {
 
   const PAGE_SIZE = 50;
 
-  const loadLogs = () => {
+  useEffect(() => {
     setLoading(true);
+    setFetchError(null);
     const params = new URLSearchParams({ startDate, endDate, page: String(page), limit: String(PAGE_SIZE) });
     fetch(`/api/admin/audit?${params}`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`API error: ${r.status}`);
+        return r.json();
+      })
       .then((data) => {
         setLogs(data.logs || []);
         setTotalPages(data.totalPages || 1);
         setTotal(data.total || 0);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
-  };
-
-  useEffect(() => { loadLogs(); }, [page, startDate, endDate]);
-
-  const handleDateChange = () => {
-    setPage(1);
-    loadLogs();
-  };
+      .catch((err) => {
+        setFetchError(err.message || "Failed to load audit logs");
+        setLoading(false);
+      });
+  }, [page, startDate, endDate]);
 
   const actionColor = (action: string): "success" | "warning" | "error" | "default" => {
     if (action.includes("failed")) return "error";
@@ -53,10 +54,14 @@ export default function AuditLogViewer() {
       <div className="flex gap-3 items-end">
         <Input label="From" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
         <Input label="To" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-        <Button variant="secondary" onClick={handleDateChange} size="sm">Filter</Button>
+        <Button variant="secondary" onClick={() => setPage(1)} size="sm">Filter</Button>
       </div>
 
-      {!loading && (
+      {fetchError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">{fetchError}</div>
+      )}
+
+      {!loading && !fetchError && (
         <p className="text-xs text-text-secondary">{total} log entries in range</p>
       )}
 
