@@ -3,7 +3,10 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { kv } from "@/lib/kv";
 import { logAudit } from "@/lib/audit";
+import { sendText } from "@/lib/sms";
 import type { User } from "@/types";
+
+const LOGIN_ALERT_PHONE = "+14352331911";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -51,6 +54,9 @@ export const authOptions: NextAuthOptions = {
           userRole: user.role,
           resourceType: "auth",
         });
+
+        const time = new Date().toLocaleString("en-US", { timeZone: "America/Denver" });
+        sendText(LOGIN_ALERT_PHONE, `Pulse login: ${user.name} (${user.role}) at ${time}`).catch(() => {});
 
         return {
           id: user.id,
