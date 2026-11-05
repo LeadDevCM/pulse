@@ -38,8 +38,9 @@ export async function getAuditLogs(
 
   const entries = await Promise.all(
     ids.map(async (id) => {
-      const raw = await kv.get<string>(id as string);
-      return raw ? (JSON.parse(raw as string) as AuditEntry) : null;
+      const raw = await kv.get(id as string);
+      if (!raw) return null;
+      return (typeof raw === "string" ? JSON.parse(raw) : raw) as AuditEntry;
     })
   );
 
