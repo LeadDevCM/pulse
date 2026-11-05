@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import Select from "@/components/ui/Select";
 import Card from "@/components/ui/Card";
 import Table from "@/components/ui/Table";
 import Badge from "@/components/ui/Badge";
@@ -20,6 +21,8 @@ interface BatchEntryDraft {
 interface BatchStatus {
   id: string;
   date: string;
+  templateId?: string;
+  templateName?: string;
   createdAt: string;
   total: number;
   sent: number;
@@ -30,47 +33,50 @@ interface BatchStatus {
 
 export default function BatchScheduler() {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [templateId, setTemplateId] = useState("");
   const [entries, setEntries] = useState<BatchEntryDraft[]>([]);
   const [clients, setClients] = useState<{ id: string; name: string; clinicianId: string; smsApproved?: boolean }[]>([]);
+  const [templates, setTemplates] = useState<{ id: string; name: string }[]>([]);
   const [selectedClient, setSelectedClient] = useState("");
   const [clientSearch, setClientSearch] = useState("");
   const [showClientDropdown, setShowClientDropdown] = useState(false);
   const [appointmentTime, setAppointmentTime] = useState("");
   const [delay, setDelay] = useState("30");
   const [loading, setLoading] = useState(false);
-  const [activeBatch, setActiveBatch] = useState<BatchStatus | null>(null);
-  const [pollingBatchId, setPollingBatchId] = useState<string | null>(null);
+  const [batchQueue, setBatchQueue] = useState<BatchStatus[]>([]);
   const { addToast } = useToast();
 
   const filteredClients = clients.filter((c) =>
     c.smsApproved && c.name.toLowerCase().includes(clientSearch.toLowerCase())
   );
 
-  useEffect(() => {
-    fetch("/api/admin/clients").then((r) => r.json()).then((d) => setClients(d.clients || [])).catch(() => {});
+  const loadBatches = useCallback(async () => {
+    try {
+      const res = await fetch("/api/sms/batch");
+      if (res.ok) {
+        const data = await res.json();
+        setBatchQueue(data.batches || []);
+      }
+    } catch { /* best-effort */ }
   }, []);
 
   useEffect(() => {
-    if (!pollingBatchId) return;
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/sms/batch/${pollingBatchId}`);
-        if (res.ok) {
-          const data = await res.json();
-          setActiveBatch(data.batch);
-          if (data.batch.complete) {
-            setPollingBatchId(null);
-            if (data.batch.failed > 0) {
-              addToast(`Batch complete: ${data.batch.sent} sent, ${data.batch.failed} failed`, "error");
-            } else {
-              addToast(`Batch complete: all ${data.batch.sent} surveys sent`, "success");
-            }
-          }
-        }
-      } catch { /* polling is best-effort */ }
-    }, 5000);
+    fetch("/api/admin/clients").then((r) => r.json()).then((d) => setClients(d.clients || [])).catch(() => {});
+    fetch("/api/admin/templates").then((r) => r.json()).then((d) => {
+      const t = d.templates || [];
+      setTemplates(t);
+      if (t.length > 0 && !templateId) setTemplateId(t[0].id);
+    }).catch(() => {});
+    loadBatches();
+  }, []);
+
+  // Poll incomplete batches
+  useEffect(() => {
+    const hasIncomplete = batchQueue.some((b) => !b.complete);
+    if (!hasIncomplete) return;
+    const interval = setInterval(loadBatches, 5000);
     return () => clearInterval(interval);
-  }, [pollingBatchId]);
+  }, [batchQueue, loadBatches]);
 
   const addEntry = () => {
     const client = clients.find((c) => c.id === selectedClient);
@@ -92,13 +98,14 @@ export default function BatchScheduler() {
   };
 
   const submitBatch = async () => {
-    if (entries.length === 0) return;
+    if (entries.length === 0 || !templateId) return;
     setLoading(true);
     const res = await fetch("/api/sms/batch", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         date,
+        templateId,
         entries: entries.map((e) => ({
           clientId: e.clientId,
           clinicianId: e.clinicianId,
@@ -108,72 +115,50 @@ export default function BatchScheduler() {
       }),
     });
     if (res.ok) {
-      const data = await res.json();
-      addToast(`Batch scheduled: ${entries.length} surveys`, "success");
+      const selectedTemplate = templates.find((t) => t.id === templateId);
+      addToast(`Batch scheduled: ${entries.length} ${selectedTemplate?.name || ""} surveys`, "success");
       setEntries([]);
-      setPollingBatchId(data.batchId);
-      setActiveBatch({ id: data.batchId, date, createdAt: new Date().toISOString(), total: entries.length, sent: 0, failed: 0, pending: entries.length, complete: false });
+      loadBatches();
     } else {
       addToast("Failed to schedule batch", "error");
     }
     setLoading(false);
   };
 
-  const refreshBatchStatus = async () => {
-    if (!activeBatch) return;
-    try {
-      const res = await fetch(`/api/sms/batch/${activeBatch.id}`);
-      if (res.ok) {
-        const data = await res.json();
-        setActiveBatch(data.batch);
-      }
-    } catch {
-      addToast("Failed to refresh status", "error");
-    }
-  };
-
   return (
     <div className="space-y-6">
-      {activeBatch && (
+      {/* Batch queue */}
+      {batchQueue.length > 0 && (
         <Card>
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <h3 className="text-sm font-semibold text-text">Batch Status</h3>
-              <div className="flex items-center gap-2">
-                {!activeBatch.complete && (
-                  <span className="text-xs text-text-secondary animate-pulse">Processing...</span>
-                )}
-                <button onClick={refreshBatchStatus} className="p-1 text-text-secondary hover:text-text transition-colors">
-                  <IconRefresh size={16} />
-                </button>
-                <button onClick={() => { setActiveBatch(null); setPollingBatchId(null); }} className="text-xs text-text-secondary hover:text-text">
-                  Dismiss
-                </button>
-              </div>
+              <h3 className="text-sm font-semibold text-text">Scheduled Batches</h3>
+              <button onClick={loadBatches} className="p-1 text-text-secondary hover:text-text transition-colors" title="Refresh">
+                <IconRefresh size={16} />
+              </button>
             </div>
-            <div className="flex gap-4 text-sm">
-              <div className="flex items-center gap-1.5">
-                <Badge variant="default">{activeBatch.total} total</Badge>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Badge variant="success">{activeBatch.sent} sent</Badge>
-              </div>
-              {activeBatch.failed > 0 && (
-                <div className="flex items-center gap-1.5">
-                  <Badge variant="error">{activeBatch.failed} failed</Badge>
+            <div className="space-y-2">
+              {batchQueue.map((b) => (
+                <div key={b.id} className="flex items-center gap-3 px-3 py-2 bg-bg-alt/50 rounded-lg text-sm">
+                  <span className="font-medium text-text min-w-[90px]">{b.date}</span>
+                  {b.templateName && <Badge variant="default">{b.templateName}</Badge>}
+                  <div className="flex items-center gap-2 ml-auto">
+                    <Badge variant="success">{b.sent} sent</Badge>
+                    {b.failed > 0 && <Badge variant="error">{b.failed} failed</Badge>}
+                    {b.pending > 0 && <Badge variant="warning">{b.pending} pending</Badge>}
+                    {!b.complete && <span className="text-xs text-primary animate-pulse">Processing...</span>}
+                    {b.complete && <span className="text-xs text-green-600">Complete</span>}
+                  </div>
+                  <div className="w-24">
+                    <div className="w-full bg-bg-alt rounded-full h-1.5">
+                      <div
+                        className="bg-primary rounded-full h-1.5 transition-all duration-500"
+                        style={{ width: `${b.total > 0 ? ((b.sent + b.failed) / b.total) * 100 : 0}%` }}
+                      />
+                    </div>
+                  </div>
                 </div>
-              )}
-              {activeBatch.pending > 0 && (
-                <div className="flex items-center gap-1.5">
-                  <Badge variant="warning">{activeBatch.pending} pending</Badge>
-                </div>
-              )}
-            </div>
-            <div className="w-full bg-bg-alt rounded-full h-2">
-              <div
-                className="bg-primary rounded-full h-2 transition-all duration-500"
-                style={{ width: `${((activeBatch.sent + activeBatch.failed) / activeBatch.total) * 100}%` }}
-              />
+              ))}
             </div>
           </div>
         </Card>
@@ -181,7 +166,15 @@ export default function BatchScheduler() {
 
       <Card>
         <div className="space-y-4">
-          <Input label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            <Select
+              label="Survey Template"
+              value={templateId}
+              onChange={(e) => setTemplateId(e.target.value)}
+              options={templates.map((t) => ({ value: t.id, label: t.name }))}
+            />
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="relative">
               <Input
@@ -222,7 +215,7 @@ export default function BatchScheduler() {
             <Input label="Appt Time" type="time" value={appointmentTime} onChange={(e) => setAppointmentTime(e.target.value)} />
             <Input label="Delay (min)" type="number" value={delay} onChange={(e) => setDelay(e.target.value)} />
           </div>
-          <Button variant="secondary" onClick={addEntry} size="sm">
+          <Button variant="secondary" onClick={addEntry} size="sm" disabled={!selectedClient || !appointmentTime}>
             <IconPlus size={16} className="mr-1" /> Add to Batch
           </Button>
         </div>
@@ -244,7 +237,7 @@ export default function BatchScheduler() {
               </tr>
             ))}
           </Table>
-          <Button onClick={submitBatch} loading={loading}>
+          <Button onClick={submitBatch} loading={loading} disabled={!templateId}>
             <IconCalendarEvent size={16} className="mr-2" /> Schedule {entries.length} Surveys
           </Button>
         </>

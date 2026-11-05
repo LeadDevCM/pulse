@@ -36,19 +36,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "client_opted_out" }, { status: 422 });
   }
 
-  // Get active template
-  const templateIds = await kv.smembers("survey:template:index");
-  let templateId = "";
-  for (const tid of templateIds) {
-    const tRaw = await kv.get<string>(`survey:template:${tid}`);
-    if (tRaw) {
-      const t = typeof tRaw === "string" ? JSON.parse(tRaw) : tRaw;
-      if (t.active) { templateId = t.id; break; }
-    }
-  }
-
+  const templateId = batch.templateId;
   if (!templateId) {
-    return NextResponse.json({ error: "no_active_template" }, { status: 500 });
+    return NextResponse.json({ error: "no_template_on_batch" }, { status: 500 });
   }
 
   let result;

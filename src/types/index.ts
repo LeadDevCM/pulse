@@ -118,6 +118,7 @@ export interface SurveyAnswer {
 export interface ScheduledBatch {
   id: string;
   date: string;
+  templateId: string;
   scheduledBy: string;
   entries: BatchEntry[];
   createdAt: string;

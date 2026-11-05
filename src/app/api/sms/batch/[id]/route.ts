@@ -18,6 +18,15 @@ export async function GET(
 
   const batch: ScheduledBatch = typeof raw === "string" ? JSON.parse(raw) : raw;
 
+  let templateName = "";
+  if (batch.templateId) {
+    const tRaw = await kv.get(`survey:template:${batch.templateId}`);
+    if (tRaw) {
+      const t = typeof tRaw === "string" ? JSON.parse(tRaw) : tRaw;
+      templateName = t.name || "";
+    }
+  }
+
   const total = batch.entries.length;
   const sent = batch.entries.filter((e) => e.status === "sent").length;
   const failed = batch.entries.filter((e) => e.status === "failed").length;
@@ -27,6 +36,8 @@ export async function GET(
     batch: {
       id: batch.id,
       date: batch.date,
+      templateId: batch.templateId,
+      templateName,
       createdAt: batch.createdAt,
       total,
       sent,
