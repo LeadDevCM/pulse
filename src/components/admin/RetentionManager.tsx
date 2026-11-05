@@ -417,20 +417,32 @@ export default function RetentionManager() {
           {clients.length === 0 ? "No clients yet. Add one or import a CSV." : "No clients match your filters."}
         </div>
       ) : (
-        <div className="bg-white border border-border rounded-xl shadow-sm">
-          <table className="w-full text-sm">
+        <div className="bg-white border border-border rounded-xl shadow-sm overflow-x-auto">
+          <table className="w-full text-sm table-fixed">
+            <colgroup>
+              <col className="w-9" />
+              <col style={{ width: "180px" }} />
+              <col className="w-12" />
+              {!clinicianFilter && <col style={{ width: "160px" }} />}
+              <col style={{ width: "110px" }} />
+              <col style={{ width: "140px" }} />
+              <col style={{ width: "130px" }} />
+              <col style={{ width: "130px" }} />
+              <col style={{ width: "150px" }} />
+              <col className="w-9" />
+            </colgroup>
             <thead>
               <tr className="border-b border-border bg-bg-alt">
-                <th className="w-8 px-2 py-2.5" />
+                <th className="px-2 py-2.5" />
                 <th className="text-left px-3 py-2.5 font-medium text-text-secondary whitespace-nowrap">Client</th>
-                <th className="text-center px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap" title="Approved for SMS">SMS</th>
-                {!clinicianFilter && <th className="text-left px-3 py-2.5 font-medium text-text-secondary whitespace-nowrap">Clinician</th>}
-                <th className="text-left px-3 py-2.5 font-medium text-text-secondary whitespace-nowrap">Status</th>
-                <th className="text-left px-3 py-2.5 font-medium text-text-secondary whitespace-nowrap">Frequency</th>
-                <th className="text-left px-3 py-2.5 font-medium text-text-secondary whitespace-nowrap">Start Date</th>
-                <th className="text-left px-3 py-2.5 font-medium text-text-secondary whitespace-nowrap">Last Appt</th>
-                <th className="text-left px-3 py-2.5 font-medium text-text-secondary whitespace-nowrap">Term. Reason</th>
-                <th className="w-8 px-2 py-2.5" />
+                <th className="text-center px-1 py-2.5 font-medium text-text-secondary whitespace-nowrap" title="Approved for SMS">SMS</th>
+                {!clinicianFilter && <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap">Clinician</th>}
+                <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap">Status</th>
+                <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap">Frequency</th>
+                <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap">Start Date</th>
+                <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap">Last Appt</th>
+                <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap">Term. Reason</th>
+                <th className="px-2 py-2.5" />
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -438,134 +450,134 @@ export default function RetentionManager() {
                 const status = c.status || "active";
                 const saving = savingRows[c.id] || "idle";
                 const isExpanded = expandedId === c.id;
+                const colCount = clinicianFilter ? 9 : 10;
                 return (
-                  <tr key={c.id} className="group">
-                    <td colSpan={clinicianFilter ? 9 : 10} className="p-0">
-                      {/* Main row */}
-                      <div className="flex items-center hover:bg-bg-alt/50 transition-colors">
-                        <div className="w-8 px-2 py-2 flex-shrink-0">
-                          <button
-                            onClick={() => setExpandedId(isExpanded ? null : c.id)}
-                            className="p-0.5 text-text-secondary hover:text-text transition-colors"
-                          >
-                            {isExpanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
-                          </button>
-                        </div>
-                        <div className="px-3 py-2 font-medium text-text whitespace-nowrap min-w-[140px]">
-                          <button onClick={() => setExpandedId(isExpanded ? null : c.id)} className="text-left hover:text-primary transition-colors">
-                            {c.name}
-                          </button>
-                        </div>
-                        <div className="px-2 py-1 text-center w-12 flex-shrink-0">
-                          <button
-                            onClick={() => {
-                              const next = !c.smsApproved;
-                              setClients((prev) => prev.map((cl) => (cl.id === c.id ? { ...cl, smsApproved: next } : cl)));
-                              saveField(c.id, { smsApproved: String(next) });
-                            }}
-                            className={`inline-flex items-center justify-center w-6 h-6 rounded border transition-colors ${c.smsApproved ? "bg-green-100 border-green-400 text-green-700" : "bg-surface border-border text-text-secondary/30 hover:border-border-dark"}`}
-                            title={c.smsApproved ? "SMS approved — click to revoke" : "Not approved for SMS — click to approve"}
-                          >
-                            {c.smsApproved && <IconCheck size={14} />}
-                          </button>
-                        </div>
-                        {!clinicianFilter && (
-                          <div className="px-1 py-1 min-w-[140px]">
-                            <select value={c.clinicianId || ""} onChange={(e) => handleSelectChange(c.id, "clinicianId", e.target.value)} className={cellSelect}>
-                              <option value="">—</option>
-                              {clinicians.filter((cl) => cl.name).map((cl) => <option key={cl.id} value={cl.id}>{cl.name}</option>)}
-                            </select>
-                          </div>
-                        )}
-                        <div className="px-1 py-1 min-w-[110px]">
-                          <select
-                            value={status}
-                            onChange={(e) => handleSelectChange(c.id, "status", e.target.value)}
-                            className={`${cellSelect} ${status === "active" ? "text-green-700" : status === "inactive" ? "text-amber-700" : "text-red-700"} font-medium`}
-                          >
-                            {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  <>
+                    <tr key={c.id} className="group hover:bg-bg-alt/50 transition-colors">
+                      <td className="px-2 py-2">
+                        <button
+                          onClick={() => setExpandedId(isExpanded ? null : c.id)}
+                          className="p-0.5 text-text-secondary hover:text-text transition-colors"
+                        >
+                          {isExpanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
+                        </button>
+                      </td>
+                      <td className="px-3 py-2 font-medium text-text truncate">
+                        <button onClick={() => setExpandedId(isExpanded ? null : c.id)} className="text-left hover:text-primary transition-colors truncate block w-full">
+                          {c.name}
+                        </button>
+                      </td>
+                      <td className="px-1 py-1 text-center">
+                        <button
+                          onClick={() => {
+                            const next = !c.smsApproved;
+                            setClients((prev) => prev.map((cl) => (cl.id === c.id ? { ...cl, smsApproved: next } : cl)));
+                            saveField(c.id, { smsApproved: String(next) });
+                          }}
+                          className={`inline-flex items-center justify-center w-6 h-6 rounded border transition-colors ${c.smsApproved ? "bg-green-100 border-green-400 text-green-700" : "bg-surface border-border text-text-secondary/30 hover:border-border-dark"}`}
+                          title={c.smsApproved ? "SMS approved — click to revoke" : "Not approved for SMS — click to approve"}
+                        >
+                          {c.smsApproved && <IconCheck size={14} />}
+                        </button>
+                      </td>
+                      {!clinicianFilter && (
+                        <td className="px-1 py-1">
+                          <select value={c.clinicianId || ""} onChange={(e) => handleSelectChange(c.id, "clinicianId", e.target.value)} className={cellSelect}>
+                            <option value="">—</option>
+                            {clinicians.filter((cl) => cl.name).map((cl) => <option key={cl.id} value={cl.id}>{cl.name}</option>)}
                           </select>
-                        </div>
-                        <div className="px-1 py-1 min-w-[150px]">
-                          <select value={c.frequency || ""} onChange={(e) => handleSelectChange(c.id, "frequency", e.target.value)} className={cellSelect}>
-                            {FREQUENCY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                          </select>
-                        </div>
-                        <div className="px-1 py-1 min-w-[130px]">
-                          <input type="date" value={c.startDate || ""} onChange={(e) => updateLocal(c.id, "startDate", e.target.value)} onBlur={(e) => handleBlurSave(c.id, "startDate", e.target.value)} className={cellInput} />
-                        </div>
-                        <div className="px-1 py-1 min-w-[130px]">
-                          <input type="date" value={c.lastApptDate || ""} onChange={(e) => updateLocal(c.id, "lastApptDate", e.target.value)} onBlur={(e) => handleBlurSave(c.id, "lastApptDate", e.target.value)} className={cellInput} />
-                        </div>
-                        <div className="px-1 py-1 min-w-[140px]">
-                          {status === "terminated" ? (
-                            <select value={c.terminationReason || ""} onChange={(e) => handleSelectChange(c.id, "terminationReason", e.target.value)} className={cellSelect}>
-                              {TERMINATION_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                            </select>
-                          ) : <span className="px-2 text-text-secondary/40">—</span>}
-                        </div>
-                        <div className="w-8 px-2 py-1 text-center flex-shrink-0">
-                          {saving === "saving" && <IconLoader2 size={14} className="text-primary animate-spin" />}
-                          {saving === "saved" && <IconCheck size={14} className="text-green-500" />}
-                        </div>
-                      </div>
-
-                      {/* Expanded detail panel */}
-                      {isExpanded && (
-                        <div className="border-t border-border bg-bg-alt/30 px-4 py-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl">
-                            <div>
-                              <label className="block text-xs font-medium text-text-secondary mb-1">Email</label>
-                              <input
-                                type="email"
-                                value={c.email || ""}
-                                onChange={(e) => updateLocal(c.id, "email", e.target.value)}
-                                onBlur={(e) => handleBlurSave(c.id, "email", e.target.value)}
-                                placeholder="No email on file"
-                                className="w-full px-3 py-2 rounded-lg border border-border bg-white text-text text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-text-secondary mb-1">Phone</label>
-                              <input
-                                type="tel"
-                                value={c.phone || ""}
-                                onChange={(e) => updateLocal(c.id, "phone", e.target.value)}
-                                onBlur={(e) => handleBlurSave(c.id, "phone", e.target.value)}
-                                placeholder="+14355551234"
-                                className="w-full px-3 py-2 rounded-lg border border-border bg-white text-text text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                              />
-                            </div>
-                            <div className="md:col-span-2">
-                              <label className="block text-xs font-medium text-text-secondary mb-1">Notes</label>
-                              <textarea
-                                value={c.notes || ""}
-                                onChange={(e) => updateLocal(c.id, "notes", e.target.value)}
-                                onBlur={(e) => handleBlurSave(c.id, "notes", e.target.value)}
-                                rows={3}
-                                placeholder="Add notes about this client..."
-                                className="w-full px-3 py-2 rounded-lg border border-border bg-white text-text text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors resize-y"
-                              />
-                            </div>
-                            <div className="md:col-span-2 flex items-center gap-4 pt-1">
-                              <div className="flex flex-wrap gap-2 text-xs text-text-secondary">
-                                <span>Opted in: {new Date(c.optedInAt).toLocaleDateString()}</span>
-                                {c.optedOut && <Badge variant="error">Opted out</Badge>}
-                                {c.smsConsent === "confirmed" && <Badge variant="success">SMS Confirmed</Badge>}
-                                {c.smsConsent === "pending" && <Badge variant="warning">SMS Pending</Badge>}
-                              </div>
-                              <button
-                                onClick={() => removeClient(c.id)}
-                                className="ml-auto flex items-center gap-1 text-xs text-error hover:text-red-700 transition-colors"
-                              >
-                                <IconTrash size={14} /> Remove Client
-                              </button>
-                            </div>
-                          </div>
-                        </div>
+                        </td>
                       )}
-                    </td>
-                  </tr>
+                      <td className="px-1 py-1">
+                        <select
+                          value={status}
+                          onChange={(e) => handleSelectChange(c.id, "status", e.target.value)}
+                          className={`${cellSelect} ${status === "active" ? "text-green-700" : status === "inactive" ? "text-amber-700" : "text-red-700"} font-medium`}
+                        >
+                          {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        </select>
+                      </td>
+                      <td className="px-1 py-1">
+                        <select value={c.frequency || ""} onChange={(e) => handleSelectChange(c.id, "frequency", e.target.value)} className={cellSelect}>
+                          {FREQUENCY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        </select>
+                      </td>
+                      <td className="px-1 py-1">
+                        <input type="date" value={c.startDate || ""} onChange={(e) => updateLocal(c.id, "startDate", e.target.value)} onBlur={(e) => handleBlurSave(c.id, "startDate", e.target.value)} className={cellInput} />
+                      </td>
+                      <td className="px-1 py-1">
+                        <input type="date" value={c.lastApptDate || ""} onChange={(e) => updateLocal(c.id, "lastApptDate", e.target.value)} onBlur={(e) => handleBlurSave(c.id, "lastApptDate", e.target.value)} className={cellInput} />
+                      </td>
+                      <td className="px-1 py-1">
+                        {status === "terminated" ? (
+                          <select value={c.terminationReason || ""} onChange={(e) => handleSelectChange(c.id, "terminationReason", e.target.value)} className={cellSelect}>
+                            {TERMINATION_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                          </select>
+                        ) : <span className="px-2 text-text-secondary/40">—</span>}
+                      </td>
+                      <td className="px-2 py-1 text-center">
+                        {saving === "saving" && <IconLoader2 size={14} className="text-primary animate-spin" />}
+                        {saving === "saved" && <IconCheck size={14} className="text-green-500" />}
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr key={`${c.id}-detail`}>
+                        <td colSpan={colCount} className="p-0">
+                          <div className="border-t border-border bg-bg-alt/30 px-4 py-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl">
+                              <div>
+                                <label className="block text-xs font-medium text-text-secondary mb-1">Email</label>
+                                <input
+                                  type="email"
+                                  value={c.email || ""}
+                                  onChange={(e) => updateLocal(c.id, "email", e.target.value)}
+                                  onBlur={(e) => handleBlurSave(c.id, "email", e.target.value)}
+                                  placeholder="No email on file"
+                                  className="w-full px-3 py-2 rounded-lg border border-border bg-white text-text text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-text-secondary mb-1">Phone</label>
+                                <input
+                                  type="tel"
+                                  value={c.phone || ""}
+                                  onChange={(e) => updateLocal(c.id, "phone", e.target.value)}
+                                  onBlur={(e) => handleBlurSave(c.id, "phone", e.target.value)}
+                                  placeholder="+14355551234"
+                                  className="w-full px-3 py-2 rounded-lg border border-border bg-white text-text text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                                />
+                              </div>
+                              <div className="md:col-span-2">
+                                <label className="block text-xs font-medium text-text-secondary mb-1">Notes</label>
+                                <textarea
+                                  value={c.notes || ""}
+                                  onChange={(e) => updateLocal(c.id, "notes", e.target.value)}
+                                  onBlur={(e) => handleBlurSave(c.id, "notes", e.target.value)}
+                                  rows={3}
+                                  placeholder="Add notes about this client..."
+                                  className="w-full px-3 py-2 rounded-lg border border-border bg-white text-text text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors resize-y"
+                                />
+                              </div>
+                              <div className="md:col-span-2 flex items-center gap-4 pt-1">
+                                <div className="flex flex-wrap gap-2 text-xs text-text-secondary">
+                                  <span>Opted in: {new Date(c.optedInAt).toLocaleDateString()}</span>
+                                  {c.optedOut && <Badge variant="error">Opted out</Badge>}
+                                  {c.smsConsent === "confirmed" && <Badge variant="success">SMS Confirmed</Badge>}
+                                  {c.smsConsent === "pending" && <Badge variant="warning">SMS Pending</Badge>}
+                                </div>
+                                <button
+                                  onClick={() => removeClient(c.id)}
+                                  className="ml-auto flex items-center gap-1 text-xs text-error hover:text-red-700 transition-colors"
+                                >
+                                  <IconTrash size={14} /> Remove Client
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 );
               })}
             </tbody>
