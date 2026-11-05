@@ -3,15 +3,16 @@ import { requireRole } from "@/lib/auth-guard";
 import { getAuditLogs } from "@/lib/audit";
 
 export async function GET(request: Request) {
-  const { error } = await requireRole(["partner"]);
+  const { error } = await requireRole(["partner", "office_manager"]);
   if (error) return error;
 
   const url = new URL(request.url);
   const startDate = url.searchParams.get("startDate")
     ? new Date(url.searchParams.get("startDate")!)
     : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  const endDate = url.searchParams.get("endDate")
-    ? new Date(url.searchParams.get("endDate")!)
+  const endDateParam = url.searchParams.get("endDate");
+  const endDate = endDateParam
+    ? new Date(new Date(endDateParam).getTime() + 24 * 60 * 60 * 1000 - 1)
     : new Date();
   const limit = Math.min(Number(url.searchParams.get("limit") || "100"), 500);
   const page = Number(url.searchParams.get("page") || "1");

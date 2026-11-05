@@ -31,7 +31,7 @@ interface BatchStatus {
 export default function BatchScheduler() {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [entries, setEntries] = useState<BatchEntryDraft[]>([]);
-  const [clients, setClients] = useState<{ id: string; name: string; clinicianId: string }[]>([]);
+  const [clients, setClients] = useState<{ id: string; name: string; clinicianId: string; smsApproved?: boolean }[]>([]);
   const [selectedClient, setSelectedClient] = useState("");
   const [clientSearch, setClientSearch] = useState("");
   const [showClientDropdown, setShowClientDropdown] = useState(false);
@@ -43,7 +43,7 @@ export default function BatchScheduler() {
   const { addToast } = useToast();
 
   const filteredClients = clients.filter((c) =>
-    c.name.toLowerCase().includes(clientSearch.toLowerCase())
+    c.smsApproved && c.name.toLowerCase().includes(clientSearch.toLowerCase())
   );
 
   useEffect(() => {

@@ -14,7 +14,7 @@ export default function SendTrigger() {
   const [showClientDropdown, setShowClientDropdown] = useState(false);
   const [clinicianId, setClinicianId] = useState("");
   const [templateId, setTemplateId] = useState("");
-  const [clients, setClients] = useState<{ id: string; name: string; clinicianId: string }[]>([]);
+  const [clients, setClients] = useState<{ id: string; name: string; clinicianId: string; smsApproved?: boolean }[]>([]);
   const [clinicians, setClinicians] = useState<{ id: string; name: string }[]>([]);
   const [templates, setTemplates] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
@@ -25,7 +25,7 @@ export default function SendTrigger() {
   const { addToast } = useToast();
 
   const filteredClients = clients.filter((c) =>
-    c.name.toLowerCase().includes(clientSearch.toLowerCase())
+    c.smsApproved && c.name.toLowerCase().includes(clientSearch.toLowerCase())
   );
 
   useEffect(() => {
