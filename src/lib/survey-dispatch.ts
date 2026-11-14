@@ -54,6 +54,10 @@ const promptedKey = (clientId: string) => `consent:prompted:${clientId}`;
  *  (at most once per 24h). */
 async function requestConsent(req: DispatchRequest): Promise<DispatchResult> {
   const { clientId, client } = req;
+  const phone = decrypt(client.phone);
+  if (!phone || phone.replace(/\D/g, "").length < 10) {
+    return { kind: "consent_requested", prompted: false };
+  }
   await kv.set(
     pendingKey(clientId),
     JSON.stringify({
@@ -96,6 +100,21 @@ export async function dispatchSurvey(req: DispatchRequest): Promise<DispatchResu
   }
 
   const phone = decrypt(client.phone);
+  if (!phone || phone.replace(/\D/g, "").length < 10) {
+    const send: SurveySend = {
+      id: `send:${crypto.randomUUID()}`,
+      clientId,
+      clinicianId,
+      templateId,
+      token: generateToken(),
+      sentAt: new Date().toISOString(),
+      sentBy: req.sentBy,
+      status: "failed",
+      expiresAt: new Date().toISOString(),
+    };
+    await kv.set(`send:${send.id}`, JSON.stringify(send), { ex: NINETY_DAYS });
+    return { kind: "failed", send, detail: "Client has no valid phone number" };
+  }
   const token = generateToken();
   const now = new Date();
   const expiryHours = Number(process.env.SURVEY_LINK_EXPIRY_HOURS || 48);

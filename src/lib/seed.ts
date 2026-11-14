@@ -18,6 +18,7 @@ export async function seedDatabase() {
     { id: uuidv4(), name: "Dennie Asbury", active: true },
     { id: uuidv4(), name: "Brooklyn Blanchard", active: true },
     { id: uuidv4(), name: "Travis Eide", active: true },
+    { id: uuidv4(), name: "Tani Bunker", active: true },
   ];
 
   for (const c of clinicians) {

@@ -31,6 +31,9 @@ export async function sendViaTwilio(
   toPhone: string,
   text: string
 ): Promise<{ messageId: string; status: string }> {
+  if (!toPhone || toPhone.replace(/\D/g, "").length < 10) {
+    throw new Error("Cannot send SMS: recipient phone number is empty or invalid");
+  }
   const { sid, token } = creds();
   const form = new URLSearchParams({ To: toPhone, Body: text });
 

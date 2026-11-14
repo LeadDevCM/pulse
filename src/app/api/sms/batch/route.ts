@@ -18,6 +18,7 @@ export async function GET() {
     const total = batch.entries.length;
     const sent = batch.entries.filter((e) => e.status === "sent").length;
     const failed = batch.entries.filter((e) => e.status === "failed").length;
+    const expired = batch.entries.filter((e) => e.status === "expired").length;
     const pending = batch.entries.filter((e) => e.status === "pending" || e.status === "consent_pending").length;
     batches.push({
       id: batch.id,
@@ -27,6 +28,7 @@ export async function GET() {
       total,
       sent,
       failed,
+      expired,
       pending,
       complete: pending === 0,
     });
@@ -65,25 +67,11 @@ export async function POST(request: Request) {
   const ninetyDaysSeconds = 90 * 24 * 60 * 60;
   await kv.set(`batch:${batchId}`, JSON.stringify(batch), { ex: ninetyDaysSeconds });
   await kv.sadd("batch:index", batchId);
-
-  // Notify n8n to schedule the batch sends
-  if (process.env.N8N_BASE_URL) {
-    try {
-      await fetch(`${process.env.N8N_BASE_URL}/webhook/batch-schedule`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-webhook-secret": process.env.N8N_WEBHOOK_SECRET!,
-        },
-        body: JSON.stringify({ batchId, date, entries: batch.entries }),
-      });
-    } catch {
-      // n8n notification is best-effort
-    }
-  }
+  await kv.sadd(`batch:by-date:${date}`, batchId);
+  await kv.expire(`batch:by-date:${date}`, ninetyDaysSeconds);
 
   await logAudit({
-    action: "survey_batch_sent",
+    action: "survey_batch_scheduled",
     userId: session.user.id,
     userRole: session.user.role,
     resourceType: "batch",

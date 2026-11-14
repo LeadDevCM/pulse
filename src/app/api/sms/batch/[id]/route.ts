@@ -30,7 +30,8 @@ export async function GET(
   const total = batch.entries.length;
   const sent = batch.entries.filter((e) => e.status === "sent").length;
   const failed = batch.entries.filter((e) => e.status === "failed").length;
-  const pending = batch.entries.filter((e) => e.status === "pending").length;
+  const expired = batch.entries.filter((e) => e.status === "expired").length;
+  const pending = batch.entries.filter((e) => e.status === "pending" || e.status === "consent_pending").length;
 
   return NextResponse.json({
     batch: {
@@ -42,6 +43,7 @@ export async function GET(
       total,
       sent,
       failed,
+      expired,
       pending,
       complete: pending === 0,
       entries: batch.entries,

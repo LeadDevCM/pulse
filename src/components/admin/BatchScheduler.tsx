@@ -27,6 +27,7 @@ interface BatchStatus {
   total: number;
   sent: number;
   failed: number;
+  expired: number;
   pending: number;
   complete: boolean;
 }
@@ -145,6 +146,7 @@ export default function BatchScheduler() {
                   <div className="flex items-center gap-2 ml-auto">
                     <Badge variant="success">{b.sent} sent</Badge>
                     {b.failed > 0 && <Badge variant="error">{b.failed} failed</Badge>}
+                    {b.expired > 0 && <Badge variant="error">{b.expired} expired</Badge>}
                     {b.pending > 0 && <Badge variant="warning">{b.pending} pending</Badge>}
                     {!b.complete && <span className="text-xs text-primary animate-pulse">Processing...</span>}
                     {b.complete && <span className="text-xs text-green-600">Complete</span>}
@@ -153,7 +155,7 @@ export default function BatchScheduler() {
                     <div className="w-full bg-bg-alt rounded-full h-1.5">
                       <div
                         className="bg-primary rounded-full h-1.5 transition-all duration-500"
-                        style={{ width: `${b.total > 0 ? ((b.sent + b.failed) / b.total) * 100 : 0}%` }}
+                        style={{ width: `${b.total > 0 ? ((b.sent + b.failed + b.expired) / b.total) * 100 : 0}%` }}
                       />
                     </div>
                   </div>

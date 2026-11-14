@@ -13,5 +13,5 @@ export async function POST(request: Request) {
     if (status === "delivered") await updateSendStatus(sid, "delivered");
     else if (status === "failed" || status === "undelivered") await updateSendStatus(sid, "failed");
   }
-  return new NextResponse("", { status: 204 });
+  return new NextResponse(null, { status: 204 });
 }

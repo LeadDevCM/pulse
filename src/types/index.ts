@@ -129,7 +129,7 @@ export interface BatchEntry {
   clinicianId: string;
   appointmentTime: string;
   sendAfterMinutes: number;
-  status: 'pending' | 'sent' | 'failed' | 'consent_pending';
+  status: 'pending' | 'sent' | 'failed' | 'consent_pending' | 'expired';
   sendId?: string;
 }
 
@@ -139,7 +139,8 @@ export type AuditAction =
   | 'client_added'
   | 'client_removed'
   | 'survey_sent'
-  | 'survey_batch_sent'
+  | 'survey_batch_scheduled'
+  | 'batch_dispatch_run'
   | 'response_submitted'
   | 'response_viewed'
   | 'responses_purged'
