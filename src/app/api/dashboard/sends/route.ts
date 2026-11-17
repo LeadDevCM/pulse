@@ -23,8 +23,8 @@ export async function GET(request: Request) {
     allSendIds.push(...ids);
   }
 
-  const sends: (SurveySend & { clientName?: string; templateName?: string })[] = [];
-  const clientCache: Record<string, string> = {};
+  const sends: (SurveySend & { clientName?: string; clientFirstName?: string; clientLastName?: string; templateName?: string })[] = [];
+  const clientCache: Record<string, { first: string; last: string }> = {};
   const templateCache: Record<string, string> = {};
 
   for (const sid of allSendIds) {
@@ -38,12 +38,12 @@ export async function GET(request: Request) {
       if (cRaw) {
         const client: Client = typeof cRaw === "string" ? JSON.parse(cRaw) : cRaw;
         try {
-          clientCache[send.clientId] = `${decrypt(client.firstName)} ${decrypt(client.lastName)}`.trim();
+          clientCache[send.clientId] = { first: decrypt(client.firstName), last: decrypt(client.lastName) };
         } catch {
-          clientCache[send.clientId] = "Unknown";
+          clientCache[send.clientId] = { first: "Unknown", last: "" };
         }
       } else {
-        clientCache[send.clientId] = "Unknown";
+        clientCache[send.clientId] = { first: "Unknown", last: "" };
       }
     }
 
@@ -57,9 +57,12 @@ export async function GET(request: Request) {
       }
     }
 
+    const cached = clientCache[send.clientId];
     sends.push({
       ...send,
-      clientName: clientCache[send.clientId],
+      clientName: `${cached.first} ${cached.last}`.trim(),
+      clientFirstName: cached.first,
+      clientLastName: cached.last,
       templateName: templateCache[send.templateId],
     });
   }

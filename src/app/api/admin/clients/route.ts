@@ -4,13 +4,31 @@ import { requireRole } from "@/lib/auth-guard";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { logAudit } from "@/lib/audit";
 import { normalizePhone, phoneIndexKey } from "@/lib/phone";
-import type { Client } from "@/types";
+import type { Client, SurveySend } from "@/types";
 
 export async function GET(request: Request) {
   const { error, session } = await requireRole(["partner", "office_manager"]);
   if (error) return error;
 
   const clientIds = await kv.smembers("client:index");
+
+  // Build a map of clientId -> most recent sentAt (scan last 90 days)
+  const lastSentMap: Record<string, string> = {};
+  const now = new Date();
+  for (let d = 0; d < 90; d++) {
+    const date = new Date(now.getTime() - d * 24 * 60 * 60 * 1000);
+    const dateKey = date.toISOString().split("T")[0];
+    const sendIds = await kv.smembers(`send:by-date:${dateKey}`);
+    for (const sid of sendIds) {
+      const raw = await kv.get(`send:${sid}`);
+      if (!raw) continue;
+      const send: SurveySend = typeof raw === "string" ? JSON.parse(raw) : raw;
+      if (!lastSentMap[send.clientId] || send.sentAt > lastSentMap[send.clientId]) {
+        lastSentMap[send.clientId] = send.sentAt;
+      }
+    }
+  }
+
   const clients = [];
 
   for (const id of clientIds) {
@@ -28,6 +46,7 @@ export async function GET(request: Request) {
       email: client.email ? decrypt(client.email) : undefined,
       phone: decrypt(client.phone),
       notes: client.notes ? decrypt(client.notes) : undefined,
+      lastSurveySentAt: lastSentMap[id] || null,
     });
   }
 

@@ -41,6 +41,7 @@ interface ClientItem {
   lastApptDate?: string;
   terminationReason?: string;
   notes?: string;
+  lastSurveySentAt?: string | null;
 }
 
 interface ClinicianItem {
@@ -61,7 +62,7 @@ interface CsvParsedClient {
 
 type SavingState = "idle" | "saving" | "saved";
 type ImportStep = "upload" | "preview" | "importing" | "results";
-type SortKey = "name" | "smsApproved" | "clinician" | "status" | "frequency" | "startDate" | "lastApptDate" | "terminationReason";
+type SortKey = "name" | "smsApproved" | "clinician" | "status" | "frequency" | "startDate" | "lastApptDate" | "lastSurveySentAt" | "terminationReason";
 type SortDir = "asc" | "desc";
 
 const STATUS_OPTIONS = [
@@ -189,13 +190,14 @@ export default function RetentionManager() {
   const sorted = [...filtered].sort((a, b) => {
     const dir = sortDir === "asc" ? 1 : -1;
     switch (sortKey) {
-      case "name": return dir * a.name.localeCompare(b.name);
+      case "name": return dir * a.lastName.localeCompare(b.lastName) || dir * a.firstName.localeCompare(b.firstName);
       case "smsApproved": return dir * (Number(a.smsApproved ?? 0) - Number(b.smsApproved ?? 0));
       case "clinician": return dir * (clinicianMap[a.clinicianId] || "").localeCompare(clinicianMap[b.clinicianId] || "");
       case "status": return dir * (a.status || "active").localeCompare(b.status || "active");
       case "frequency": return dir * (a.frequency || "").localeCompare(b.frequency || "");
       case "startDate": return dir * (a.startDate || "").localeCompare(b.startDate || "");
       case "lastApptDate": return dir * (a.lastApptDate || "").localeCompare(b.lastApptDate || "");
+      case "lastSurveySentAt": return dir * (a.lastSurveySentAt || "").localeCompare(b.lastSurveySentAt || "");
       case "terminationReason": return dir * (a.terminationReason || "").localeCompare(b.terminationReason || "");
       default: return 0;
     }
@@ -462,6 +464,7 @@ export default function RetentionManager() {
               <col style={{ width: "140px" }} />
               <col style={{ width: "130px" }} />
               <col style={{ width: "130px" }} />
+              <col style={{ width: "110px" }} />
               <col style={{ width: "150px" }} />
               <col className="w-9" />
             </colgroup>
@@ -475,6 +478,7 @@ export default function RetentionManager() {
                 <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap cursor-pointer select-none group/th" onClick={() => toggleSort("frequency")}>Frequency<SortIcon col="frequency" /></th>
                 <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap cursor-pointer select-none group/th" onClick={() => toggleSort("startDate")}>Start Date<SortIcon col="startDate" /></th>
                 <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap cursor-pointer select-none group/th" onClick={() => toggleSort("lastApptDate")}>Last Appt<SortIcon col="lastApptDate" /></th>
+                <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap cursor-pointer select-none group/th" onClick={() => toggleSort("lastSurveySentAt")}>Last Survey<SortIcon col="lastSurveySentAt" /></th>
                 <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap cursor-pointer select-none group/th" onClick={() => toggleSort("terminationReason")}>Term. Reason<SortIcon col="terminationReason" /></th>
                 <th className="px-2 py-2.5" />
               </tr>
@@ -484,7 +488,7 @@ export default function RetentionManager() {
                 const status = c.status || "active";
                 const saving = savingRows[c.id] || "idle";
                 const isExpanded = expandedId === c.id;
-                const colCount = clinicianFilter ? 9 : 10;
+                const colCount = clinicianFilter ? 10 : 11;
                 return (
                   <>
                     <tr key={c.id} className="group hover:bg-bg-alt/50 transition-colors">
@@ -498,7 +502,7 @@ export default function RetentionManager() {
                       </td>
                       <td className="px-3 py-2 font-medium text-text truncate">
                         <button onClick={() => setExpandedId(isExpanded ? null : c.id)} className="text-left hover:text-primary transition-colors truncate block w-full">
-                          {c.name}
+                          {c.lastName}, {c.firstName}
                         </button>
                       </td>
                       <td className="px-1 py-1 text-center">
@@ -541,6 +545,9 @@ export default function RetentionManager() {
                       </td>
                       <td className="px-1 py-1">
                         <input type="date" value={c.lastApptDate || ""} onChange={(e) => updateLocal(c.id, "lastApptDate", e.target.value)} onBlur={(e) => handleBlurSave(c.id, "lastApptDate", e.target.value)} className={cellInput} />
+                      </td>
+                      <td className="px-2 py-1 text-sm text-text-secondary">
+                        {c.lastSurveySentAt ? new Date(c.lastSurveySentAt).toLocaleDateString() : <span className="text-text-secondary/40">—</span>}
                       </td>
                       <td className="px-1 py-1">
                         {status === "terminated" ? (
