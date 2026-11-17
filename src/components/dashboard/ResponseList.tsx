@@ -5,7 +5,8 @@ import Table from "@/components/ui/Table";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
-import { IconChevronRight, IconTrash } from "@tabler/icons-react";
+import { IconChevronRight, IconTrash, IconPencil, IconCheck, IconX } from "@tabler/icons-react";
+import { useSession } from "next-auth/react";
 import { useToast } from "@/components/ui/Toast";
 import type { SurveyQuestion } from "@/types";
 
@@ -36,7 +37,13 @@ export default function ResponseList({ clinicianId }: ResponseListProps) {
   const [questions, setQuestions] = useState<Record<string, SurveyQuestion[]>>({});
   const [clinicians, setClinicians] = useState<Record<string, string>>({});
   const [deleting, setDeleting] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editAnswers, setEditAnswers] = useState<{ questionId: string; value: string | number }[]>([]);
+  const [saving, setSaving] = useState(false);
+  const { data: session } = useSession();
   const { addToast } = useToast();
+
+  const canEdit = session?.user?.role === "partner" || session?.user?.role === "office_manager";
 
   useEffect(() => {
     fetch("/api/admin/clinicians")
@@ -125,6 +132,53 @@ export default function ResponseList({ clinicianId }: ResponseListProps) {
     setDeleting(false);
   };
 
+  const startEditing = () => {
+    if (!selected) return;
+    setEditAnswers(selected.answers.map((a) => ({ ...a })));
+    setEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setEditing(false);
+    setEditAnswers([]);
+  };
+
+  const updateEditAnswer = (questionId: string, value: string | number) => {
+    setEditAnswers((prev) =>
+      prev.map((a) => (a.questionId === questionId ? { ...a, value } : a))
+    );
+  };
+
+  const saveEdits = async () => {
+    if (!selected?.token) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/dashboard/responses/${selected.token}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answers: editAnswers }),
+      });
+      if (res.ok) {
+        const updated = { ...selected, answers: editAnswers };
+        setSelected(updated);
+        setResponses((prev) =>
+          prev.map((r) => (r.token === selected.token ? updated : r))
+        );
+        setEditing(false);
+        addToast("Response updated", "success");
+      } else {
+        addToast("Failed to save changes", "error");
+      }
+    } catch {
+      addToast("Network error", "error");
+    }
+    setSaving(false);
+  };
+
+  const getQuestion = (templateId: string, questionId: string): SurveyQuestion | undefined => {
+    return questions[templateId]?.find((q) => q.id === questionId);
+  };
+
   if (loading) {
     return <div className="text-center py-8 text-text-secondary">Loading responses...</div>;
   }
@@ -197,8 +251,8 @@ export default function ResponseList({ clinicianId }: ResponseListProps) {
 
       <Modal
         open={!!selected}
-        onClose={() => setSelected(null)}
-        title="Survey Response"
+        onClose={() => { setSelected(null); cancelEditing(); }}
+        title={editing ? "Edit Response" : "Survey Response"}
       >
         {selected && (
           <div className="space-y-5">
@@ -222,8 +276,9 @@ export default function ResponseList({ clinicianId }: ResponseListProps) {
             </div>
 
             <div className="divide-y divide-border">
-              {selected.answers.map((a, i) => {
+              {(editing ? editAnswers : selected.answers).map((a, i) => {
                 const type = getQuestionType(selected.templateId, a.questionId);
+                const q = getQuestion(selected.templateId, a.questionId);
                 const isRating = typeof a.value === "number" && type === "rating";
 
                 return (
@@ -232,7 +287,56 @@ export default function ResponseList({ clinicianId }: ResponseListProps) {
                       {i + 1}. {getQuestionText(selected.templateId, a.questionId)}
                     </p>
 
-                    {isRating ? (
+                    {editing ? (
+                      isRating && q?.ratingScale ? (
+                        <div className="flex gap-1.5 flex-wrap">
+                          {Array.from(
+                            { length: q.ratingScale.max - q.ratingScale.min + 1 },
+                            (_, idx) => q.ratingScale!.min + idx
+                          ).map((v) => (
+                            <button
+                              key={v}
+                              type="button"
+                              onClick={() => updateEditAnswer(a.questionId, v)}
+                              className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
+                                a.value === v
+                                  ? "bg-primary text-white"
+                                  : "bg-bg-alt text-text-secondary hover:bg-border"
+                              }`}
+                            >
+                              {v}
+                            </button>
+                          ))}
+                          <span className="ml-2 text-xs text-text-secondary self-center">
+                            {q.ratingScale.minLabel} — {q.ratingScale.maxLabel}
+                          </span>
+                        </div>
+                      ) : type === "multiple_choice" && q?.options ? (
+                        <div className="flex gap-1.5 flex-wrap">
+                          {q.options.map((opt) => (
+                            <button
+                              key={opt}
+                              type="button"
+                              onClick={() => updateEditAnswer(a.questionId, opt)}
+                              className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                                String(a.value) === opt
+                                  ? "bg-primary text-white"
+                                  : "bg-bg-alt text-text-secondary hover:bg-border"
+                              }`}
+                            >
+                              {opt}
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <textarea
+                          value={String(a.value)}
+                          onChange={(e) => updateEditAnswer(a.questionId, e.target.value)}
+                          rows={2}
+                          className="w-full border border-border rounded-lg px-3 py-2 text-sm text-text bg-white focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        />
+                      )
+                    ) : isRating ? (
                       <div className="space-y-1.5">
                         <div className="flex items-center gap-3">
                           <div className="flex-1 h-2 bg-border rounded-full overflow-hidden">
@@ -246,8 +350,6 @@ export default function ResponseList({ clinicianId }: ResponseListProps) {
                               }`}
                               style={{
                                 width: `${(() => {
-                                  const qs = questions[selected.templateId];
-                                  const q = qs?.find((q) => q.id === a.questionId);
                                   const min = q?.ratingScale?.min ?? 0;
                                   const max = q?.ratingScale?.max ?? 5;
                                   return ((a.value as number) - min) / (max - min) * 100;
@@ -276,14 +378,42 @@ export default function ResponseList({ clinicianId }: ResponseListProps) {
             </div>
 
             {selected.token && (
-              <div className="border-t border-border pt-4 flex justify-end">
-                <button
-                  onClick={() => deleteResponse(selected.token!)}
-                  disabled={deleting}
-                  className="flex items-center gap-1 text-xs text-error hover:text-red-700 transition-colors disabled:opacity-50"
-                >
-                  <IconTrash size={14} /> {deleting ? "Deleting..." : "Delete Response"}
-                </button>
+              <div className="border-t border-border pt-4 flex justify-between">
+                {editing ? (
+                  <>
+                    <button
+                      onClick={cancelEditing}
+                      className="flex items-center gap-1 text-xs text-text-secondary hover:text-text transition-colors"
+                    >
+                      <IconX size={14} /> Cancel
+                    </button>
+                    <button
+                      onClick={saveEdits}
+                      disabled={saving}
+                      className="flex items-center gap-1 text-xs text-primary hover:text-primary-dark transition-colors font-medium disabled:opacity-50"
+                    >
+                      <IconCheck size={14} /> {saving ? "Saving..." : "Save Changes"}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => deleteResponse(selected.token!)}
+                      disabled={deleting}
+                      className="flex items-center gap-1 text-xs text-error hover:text-red-700 transition-colors disabled:opacity-50"
+                    >
+                      <IconTrash size={14} /> {deleting ? "Deleting..." : "Delete Response"}
+                    </button>
+                    {canEdit && (
+                      <button
+                        onClick={startEditing}
+                        className="flex items-center gap-1 text-xs text-primary hover:text-primary-dark transition-colors font-medium"
+                      >
+                        <IconPencil size={14} /> Edit Response
+                      </button>
+                    )}
+                  </>
+                )}
               </div>
             )}
           </div>

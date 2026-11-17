@@ -142,6 +142,7 @@ export type AuditAction =
   | 'survey_batch_scheduled'
   | 'batch_dispatch_run'
   | 'response_submitted'
+  | 'response_edited'
   | 'response_viewed'
   | 'responses_purged'
   | 'client_roster_viewed'

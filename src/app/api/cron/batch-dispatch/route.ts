@@ -2,7 +2,20 @@ import { NextResponse } from "next/server";
 import { kv } from "@/lib/kv";
 import { dispatchSurvey } from "@/lib/survey-dispatch";
 import { logAudit } from "@/lib/audit";
+import { decrypt } from "@/lib/encryption";
+import { notifyDispatchFailure } from "@/lib/email";
 import type { ScheduledBatch, Client } from "@/types";
+
+/** Decrypt client first + last name, falling back to "Unknown" on failure. */
+function decryptClientName(client: Client): string {
+  try {
+    const first = decrypt(client.firstName);
+    const last = decrypt(client.lastName);
+    return `${first} ${last}`.trim() || "Unknown";
+  } catch {
+    return "Unknown";
+  }
+}
 
 const STALENESS_HOURS = 4;
 const LOCK_TTL_SECONDS = 300;
@@ -89,6 +102,7 @@ export async function GET(request: Request) {
       if (!rawClient) {
         batch.entries[i].status = "failed";
         batchModified = true;
+        notifyDispatchFailure({ clientName: "Unknown (client not in KV)", reason: "Client record not found", batchDate: batch.date });
         continue;
       }
 
@@ -97,6 +111,7 @@ export async function GET(request: Request) {
       if (client.optedOut) {
         batch.entries[i].status = "failed";
         batchModified = true;
+        notifyDispatchFailure({ clientName: decryptClientName(client), reason: "Client has opted out of SMS", batchDate: batch.date });
         continue;
       }
 
@@ -112,6 +127,8 @@ export async function GET(request: Request) {
 
         if (!result || result.kind === "failed") {
           batch.entries[i].status = "failed";
+          const detail = result?.kind === "failed" ? result.detail : "No result returned";
+          notifyDispatchFailure({ clientName: decryptClientName(client), reason: detail, batchDate: batch.date });
         } else if (result.kind === "consent_requested") {
           batch.entries[i].status = "consent_pending";
         } else {
@@ -119,8 +136,10 @@ export async function GET(request: Request) {
           batch.entries[i].sendId = result.kind === "sent" ? result.send.id : undefined;
           dispatched++;
         }
-      } catch {
+      } catch (err) {
         batch.entries[i].status = "failed";
+        const reason = err instanceof Error ? err.message : "Unknown dispatch error";
+        notifyDispatchFailure({ clientName: decryptClientName(client), reason, batchDate: batch.date });
       }
       batchModified = true;
     }
