@@ -6,8 +6,8 @@ import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { IconChevronRight, IconTrash, IconPencil, IconCheck, IconX } from "@tabler/icons-react";
-import { useSession } from "next-auth/react";
 import { useToast } from "@/components/ui/Toast";
+import { useViewAs } from "@/lib/view-context";
 import type { SurveyQuestion } from "@/types";
 
 interface ResponseItem {
@@ -40,10 +40,10 @@ export default function ResponseList({ clinicianId }: ResponseListProps) {
   const [editing, setEditing] = useState(false);
   const [editAnswers, setEditAnswers] = useState<{ questionId: string; value: string | number }[]>([]);
   const [saving, setSaving] = useState(false);
-  const { data: session } = useSession();
   const { addToast } = useToast();
+  const { viewingAs } = useViewAs();
 
-  const canEdit = session?.user?.role === "partner" || session?.user?.role === "office_manager";
+  const canEdit = viewingAs === "partner" || viewingAs === "office_manager";
 
   useEffect(() => {
     fetch("/api/admin/clinicians")
