@@ -56,6 +56,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid_phone" }, { status: 400 });
   }
 
+  const existingId = await kv.get<string>(phoneIndexKey(normalizedPhone));
+  if (existingId) {
+    return NextResponse.json(
+      { error: "duplicate_phone", message: "A client with this phone number already exists", clientId: existingId },
+      { status: 409 }
+    );
+  }
+
   const id = crypto.randomUUID();
   const client: Client = {
     id,
