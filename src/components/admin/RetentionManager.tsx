@@ -462,7 +462,6 @@ export default function RetentionManager() {
               {!clinicianFilter && <col style={{ width: "160px" }} />}
               <col style={{ width: "110px" }} />
               <col style={{ width: "110px" }} />
-              <col style={{ width: "150px" }} />
               <col className="w-9" />
             </colgroup>
             <thead>
@@ -473,7 +472,6 @@ export default function RetentionManager() {
                 {!clinicianFilter && <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap cursor-pointer select-none group/th" onClick={() => toggleSort("clinician")}>Clinician<SortIcon col="clinician" /></th>}
                 <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap cursor-pointer select-none group/th" onClick={() => toggleSort("status")}>Status<SortIcon col="status" /></th>
                 <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap cursor-pointer select-none group/th" onClick={() => toggleSort("lastSurveySentAt")}>Last Survey<SortIcon col="lastSurveySentAt" /></th>
-                <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap cursor-pointer select-none group/th" onClick={() => toggleSort("terminationReason")}>Term. Reason<SortIcon col="terminationReason" /></th>
                 <th className="px-2 py-2.5" />
               </tr>
             </thead>
@@ -482,7 +480,7 @@ export default function RetentionManager() {
                 const status = c.status || "active";
                 const saving = savingRows[c.id] || "idle";
                 const isExpanded = expandedId === c.id;
-                const colCount = clinicianFilter ? 7 : 8;
+                const colCount = clinicianFilter ? 6 : 7;
                 return (
                   <>
                     <tr key={c.id} className="group hover:bg-bg-alt/50 transition-colors">
@@ -531,13 +529,6 @@ export default function RetentionManager() {
                       </td>
                       <td className="px-2 py-1 text-sm text-text-secondary">
                         {c.lastSurveySentAt ? new Date(c.lastSurveySentAt).toLocaleDateString() : <span className="text-text-secondary/40">—</span>}
-                      </td>
-                      <td className="px-1 py-1">
-                        {status === "terminated" ? (
-                          <select value={c.terminationReason || ""} onChange={(e) => handleSelectChange(c.id, "terminationReason", e.target.value)} className={cellSelect}>
-                            {TERMINATION_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                          </select>
-                        ) : <span className="px-2 text-text-secondary/40">—</span>}
                       </td>
                       <td className="px-2 py-1 text-center">
                         {saving === "saving" && <IconLoader2 size={14} className="text-primary animate-spin" />}
