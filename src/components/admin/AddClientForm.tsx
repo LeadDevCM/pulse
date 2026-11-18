@@ -41,7 +41,14 @@ export default function AddClientForm({ onSuccess }: AddClientFormProps) {
     if (res.ok) {
       onSuccess();
     } else {
-      setError("Failed to add client");
+      const data = await res.json().catch(() => null);
+      if (data?.error === "invalid_phone") {
+        setError("Invalid phone number. Use E.164 format (e.g. +14355551234).");
+      } else if (data?.error === "missing_fields") {
+        setError("First name, last name, and phone are required.");
+      } else {
+        setError("Failed to add client.");
+      }
     }
     setLoading(false);
   };

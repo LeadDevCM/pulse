@@ -461,9 +461,6 @@ export default function RetentionManager() {
               <col className="w-12" />
               {!clinicianFilter && <col style={{ width: "160px" }} />}
               <col style={{ width: "110px" }} />
-              <col style={{ width: "140px" }} />
-              <col style={{ width: "130px" }} />
-              <col style={{ width: "130px" }} />
               <col style={{ width: "110px" }} />
               <col style={{ width: "150px" }} />
               <col className="w-9" />
@@ -475,9 +472,6 @@ export default function RetentionManager() {
                 <th className="text-center px-1 py-2.5 font-medium text-text-secondary whitespace-nowrap cursor-pointer select-none group/th" title="Approved for SMS" onClick={() => toggleSort("smsApproved")}>SMS<SortIcon col="smsApproved" /></th>
                 {!clinicianFilter && <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap cursor-pointer select-none group/th" onClick={() => toggleSort("clinician")}>Clinician<SortIcon col="clinician" /></th>}
                 <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap cursor-pointer select-none group/th" onClick={() => toggleSort("status")}>Status<SortIcon col="status" /></th>
-                <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap cursor-pointer select-none group/th" onClick={() => toggleSort("frequency")}>Frequency<SortIcon col="frequency" /></th>
-                <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap cursor-pointer select-none group/th" onClick={() => toggleSort("startDate")}>Start Date<SortIcon col="startDate" /></th>
-                <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap cursor-pointer select-none group/th" onClick={() => toggleSort("lastApptDate")}>Last Appt<SortIcon col="lastApptDate" /></th>
                 <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap cursor-pointer select-none group/th" onClick={() => toggleSort("lastSurveySentAt")}>Last Survey<SortIcon col="lastSurveySentAt" /></th>
                 <th className="text-left px-2 py-2.5 font-medium text-text-secondary whitespace-nowrap cursor-pointer select-none group/th" onClick={() => toggleSort("terminationReason")}>Term. Reason<SortIcon col="terminationReason" /></th>
                 <th className="px-2 py-2.5" />
@@ -488,7 +482,7 @@ export default function RetentionManager() {
                 const status = c.status || "active";
                 const saving = savingRows[c.id] || "idle";
                 const isExpanded = expandedId === c.id;
-                const colCount = clinicianFilter ? 10 : 11;
+                const colCount = clinicianFilter ? 7 : 8;
                 return (
                   <>
                     <tr key={c.id} className="group hover:bg-bg-alt/50 transition-colors">
@@ -534,17 +528,6 @@ export default function RetentionManager() {
                         >
                           {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                         </select>
-                      </td>
-                      <td className="px-1 py-1">
-                        <select value={c.frequency || ""} onChange={(e) => handleSelectChange(c.id, "frequency", e.target.value)} className={cellSelect}>
-                          {FREQUENCY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                        </select>
-                      </td>
-                      <td className="px-1 py-1">
-                        <input type="date" value={c.startDate || ""} onChange={(e) => updateLocal(c.id, "startDate", e.target.value)} onBlur={(e) => handleBlurSave(c.id, "startDate", e.target.value)} className={cellInput} />
-                      </td>
-                      <td className="px-1 py-1">
-                        <input type="date" value={c.lastApptDate || ""} onChange={(e) => updateLocal(c.id, "lastApptDate", e.target.value)} onBlur={(e) => handleBlurSave(c.id, "lastApptDate", e.target.value)} className={cellInput} />
                       </td>
                       <td className="px-2 py-1 text-sm text-text-secondary">
                         {c.lastSurveySentAt ? new Date(c.lastSurveySentAt).toLocaleDateString() : <span className="text-text-secondary/40">—</span>}

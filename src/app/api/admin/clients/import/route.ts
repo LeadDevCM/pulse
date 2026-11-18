@@ -43,20 +43,7 @@ export async function POST(request: Request) {
 
   const clinicianNameMap = await buildClinicianNameMap();
 
-  // Build lookup of existing clients by phone for dedup
-  const existingByPhone = new Map<string, string>();
-  if (clients.some((r) => r.phone)) {
-    for (const row of clients) {
-      if (!row.phone) continue;
-      const norm = normalizePhone(row.phone);
-      if (!norm) continue;
-      const existing = await kv.get<string>(phoneIndexKey(norm));
-      if (existing) existingByPhone.set(norm, existing);
-    }
-  }
-
   let imported = 0;
-  let updated = 0;
   let skipped = 0;
   const errors: string[] = [];
 
@@ -85,23 +72,6 @@ export async function POST(request: Request) {
       }
     }
 
-    // Dedup: if a client with this phone already exists, update instead of creating
-    if (phone && existingByPhone.has(phone)) {
-      const existingId = existingByPhone.get(phone)!;
-      const raw = await kv.get<string>(`client:${existingId}`);
-      if (raw) {
-        const existing: Client = typeof raw === "string" ? JSON.parse(raw) : raw;
-        if (!existing.email && row.email) existing.email = encrypt(row.email);
-        if (!existing.clinicianId && clinicianId) existing.clinicianId = clinicianId;
-        if (!existing.frequency && row.frequency) existing.frequency = row.frequency as Client["frequency"];
-        if (!existing.startDate && row.startDate) existing.startDate = row.startDate;
-        if (!existing.status || existing.status !== "active") existing.status = (row.status as Client["status"]) || "active";
-        await kv.set(`client:${existingId}`, JSON.stringify(existing));
-        updated++;
-        continue;
-      }
-    }
-
     const id = crypto.randomUUID();
     const client: Client = {
       id,
@@ -121,7 +91,6 @@ export async function POST(request: Request) {
     await kv.sadd("client:index", id);
     if (phone) {
       await kv.set(phoneIndexKey(phone), id);
-      existingByPhone.set(phone, id);
     }
     imported++;
   }
@@ -133,10 +102,9 @@ export async function POST(request: Request) {
     resourceType: "client",
     metadata: {
       imported: String(imported),
-      updated: String(updated),
       skipped: String(skipped),
     },
   });
 
-  return NextResponse.json({ success: true, imported, updated, skipped, errors });
+  return NextResponse.json({ success: true, imported, skipped, errors });
 }
